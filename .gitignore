@@ -3,3 +3,5 @@ node_modules
 *.swp
 browserify-cache.json
 bundle.js
+*.env
+nuria

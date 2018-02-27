@@ -7,26 +7,50 @@ CREATE TABLE users (
 CREATE TABLE entries (
   id text PRIMARY KEY,
   key text[] NOT NULL,
-  owner int REFERENCES users NOT NULL,
   tags text[] NOT NULL DEFAULT '{}',
-  name text,
-  content text,
+  name text NOT NULL DEFAULT '',
+  content text NOT NULL DEFAULT '',
 
   CHECK (id = ANY (key))
 );
 CREATE INDEX ON entries USING GIN(key);
 
-CREATE TABLE normal_memberships (
-  entry text REFERENCES entries (id),
-  member int REFERENCES users (id)
+CREATE TABLE memberships (
+  entry text REFERENCES entries (id) NOT NULL,
+  member int REFERENCES users (id) NOT NULL,
+  permission int NOT NULL DEFAULT 0,
+  -- 10: admin, 9: normal, 8-3: to be defined, 2: commenter, 1: viewer, 0: no access.
+
+  UNIQUE(entry, member)
 );
 
-CREATE VIEW memberships AS
-  SELECT entry, member AS user_id, users.name AS user_name FROM (
-    SELECT entry, member FROM normal_memberships
-    UNION
-    SELECT id AS entry, owner AS member FROM entries
-  )x INNER JOIN users ON users.id = member;
+CREATE VIEW access AS
+  SELECT child.id AS entry, member AS user_id, permission FROM entries
+  LEFT JOIN entries AS child
+    ON entries.key = child.key[1:cardinality(entries.key)]
+  LEFT JOIN memberships AS m
+    ON entries.id = m.entry;
+
+CREATE FUNCTION can_comment(u text, e text) RETURNS boolean AS $$
+  SELECT EXISTS(
+    SELECT FROM access INNER JOIN users ON users.name = u
+    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 1
+  );
+$$ LANGUAGE SQL;
+
+CREATE FUNCTION can_read(u text, e text) RETURNS boolean AS $$
+  SELECT EXISTS(
+    SELECT FROM access INNER JOIN users ON users.name = u
+    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 0
+  );
+$$ LANGUAGE SQL;
+
+CREATE FUNCTION can_write(u text, e text) RETURNS boolean AS $$
+  SELECT EXISTS(
+    SELECT FROM access INNER JOIN users ON users.name = u
+    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 8
+  );
+$$ LANGUAGE SQL;
 
 CREATE TABLE comments (
   id serial PRIMARY KEY,
@@ -36,7 +60,7 @@ CREATE TABLE comments (
   content text
 );
 
-SELECT * FROM entries;
+
 
 
 

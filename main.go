@@ -47,8 +47,8 @@ func main() {
 
 type msg struct {
 	Kind  string `json:"kind"`
-	User  string `json:"user"`
-	Entry Entry  `json:"entry"`
+	User  string `json:"user,omitempty"`
+	Entry Entry  `json:"entry,omitempty"`
 }
 
 func handle(pg *sqlx.DB, conn *websocket.Conn) {
@@ -91,6 +91,16 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 					Msg("failed to fetch entriesForUser")
 			} else {
 				for _, entryId := range entries {
+					entry, err := fetchEntry(pg, user, entryId)
+					if err != nil {
+						log.Error().
+							Str("entry", entryId).
+							Err(err).
+							Msg("failed to fetchEntry on login")
+						continue
+					}
+					sendEntry(conn, entry)
+
 					var conns cmap.ConcurrentMap
 					if tmp, ok := subscriptions.Get(entryId); ok {
 						conns = tmp.(cmap.ConcurrentMap)
@@ -112,25 +122,38 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 				log.Warn().
 					Err(err).
 					Msg("failed to updateEntry")
+				continue
 			}
 
-			log.Print(subscriptions.Items())
+			entry, err := fetchEntry(pg, user, m.Entry.Id)
+			if err != nil {
+				log.Error().
+					Str("entry", m.Entry.Id).
+					Err(err).
+					Msg("failed to fetchEntry on update-entry")
+				continue
+			}
+
 			if tmp, ok := subscriptions.Get(m.Entry.Id); ok {
 				conns := tmp.(cmap.ConcurrentMap)
-				for user, iconn := range conns.Items() {
-					log.Debug().
-						Str("user", user).
-						Msg("sending entry")
+				for _, iconn := range conns.Items() {
 					conn := iconn.(*websocket.Conn)
-					err := conn.WriteJSON(m.Entry)
-					if err != nil {
-						log.Warn().
-							Str("user", user).
-							Err(err).
-							Msg("failed to send entry to connection")
-					}
+					sendEntry(conn, entry)
 				}
 			}
 		}
+	}
+}
+
+func sendEntry(conn *websocket.Conn, entry Entry) {
+	log.Debug().
+		Str("entry", entry.Id).
+		Msg("sending entry")
+	err := conn.WriteJSON(msg{Kind: "entry", Entry: entry})
+	if err != nil {
+		log.Warn().
+			Str("entry", entry.Id).
+			Err(err).
+			Msg("failed to send entry to connection")
 	}
 }

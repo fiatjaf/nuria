@@ -1,4 +1,4 @@
-const {Record, Map, List, Set} = require('immutable')
+const {Record, Map} = require('immutable')
 const React = require('react')
 const {render} = require('react-dom')
 const h = require('react-hyperscript')
@@ -8,6 +8,7 @@ const hashbow = require('hashbow')
 const ReactGridLayout = require('react-grid-layout')
 
 const data = require('./data')
+const {User, Comment} = data
 require('./style.scss')
 
 function main () {
@@ -15,9 +16,14 @@ function main () {
     program(React.Component, () => ({
       init: [
         new Model({
-          me: new User({id: 'fiatjaf', username: 'fiatjaf', picture: 'https://trello-avatars.s3.amazonaws.com/d2f9f8c8995019e2d3fda00f45d939b8/170.png'})
+          me: 'fiatjaf'
         }),
-        dispatch => dispatch(Msg.EnterEntry('banana'))
+        dispatch => {
+          dispatch(Msg.EnterEntry('xyz'))
+          data.sync('fiatjaf', entry => {
+            dispatch(Msg.GotEntry(entry))
+          })
+        }
       ],
       update,
       view
@@ -25,39 +31,18 @@ function main () {
   )
 }
 
-const Entry = Record({
-  id: null,
-  name: '',
-  content: '',
-  tags: Set(),
-  users: Map(),
-  children: Map(),
-  comments: List(),
-  layout: []
-})
-
-const User = Record({
-  id: null,
-  username: '',
-  picture: ''
-})
-
-const Comment = Record({
-  id: null,
-  content: '',
-  author: new User()
-})
-
 const Model = Record({
   me: new User(),
-  entry: null,
-  children: Map(),
+  active_entry: null,
+  entries: Map(),
   show_comments: false
 })
 
 const Msg = union([
   'EnterEntry',
   'GotEntry',
+  'EditEntryName',
+  'SetEntryName',
   'ToggleComments',
   'AddComment',
   'AddedComment'
@@ -67,29 +52,22 @@ function update (msg, state) {
   console.log(msg)
   return Msg.match(msg, {
     'EnterEntry': entryId => [
-      state.set('entry', null),
-      dispatch => data.fetchEntry(entryId)
-        .then(data => {
-          data.tags = Set(data.tags)
-          data.children = new Map(data.children.map(ch => {
-            ch.tags = Set(ch.tags)
-            return [ch.id, new Entry(ch)]
-          }))
-          data.users = Map(data.users.map(u =>
-            [u.id, new User(u)])
-          )
-          data.comments = List(data.comments.map(c => {
-            c.author = new User(c.author)
-            return new Comment(c)
-          }))
-
-          return new Entry(data)
-        })
-        .then(entry => dispatch(Msg.GotEntry(entry)))
+      state.set('active_entry', entryId),
+      undefined
     ],
     'GotEntry': entry => [
-      state.set('entry', entry),
+      state.setIn(['entries', entry.get('id')], entry),
       undefined
+    ],
+    'EditEntryName': entryId => [
+      state.setIn(['entries', entryId, 'editing_name'], true),
+      undefined
+    ],
+    'SetEntryName': (entryId, name) => [
+      state.setIn(['entries', entryId, 'editing_name'], false),
+      dispatch => data.setEntryName(entryId, name)
+        .then()
+        .catch(console.log)
     ],
     'ToggleComments': () => [
       state.update('show_comments', show => !show),
@@ -116,7 +94,7 @@ function update (msg, state) {
 
 function view (state, dispatch) {
   console.log(state.toJS())
-  let entry = state.get('entry')
+  let entry = state.getIn(['entries', state.get('active_entry')])
   return entry
     ? (
       h('main', [
@@ -127,15 +105,14 @@ function view (state, dispatch) {
             .toArray()
           ),
           h('.content', entry.get('content')),
-          h('div', entry.get('users')
+          h('div', entry.get('members')
             .toSeq()
-            .valueSeq()
-            .map(u => (
-              h('div.user', {key: u.get('id')}, [
+            .map(name => (
+              h('div.user', {key: name}, [
                 h('a', {
-                  title: u.get('username')
+                  title: name
                 }, [
-                  h('img', {src: u.get('picture')})
+                  h('img', {src: `/picture/${name}`})
                 ])
               ])
             ))
@@ -149,12 +126,32 @@ function view (state, dispatch) {
             cols: 12,
             width: 1000
           }, entry.get('children')
-            .toSeq()
-            .valueSeq()
-            .map(v => (
-              h('div.entry', {key: v.get('id')}, [
-                h('.name', v.get('name')),
-                h('.content', v.get('content'))
+            .map(id => state.getIn(['entries', id]))
+            .filter(x => x)
+            .map(child => (
+              h('div.entry', {
+                key: child.get('id'),
+                onClick: () => {
+                  dispatch(Msg.EnterEntry(child.get('id')))
+                }
+              }, [
+                child.get('editing_name')
+                  ? (
+                    h('input.name', {
+                      value: child.get('name'),
+                      onChange: e =>
+                        dispatch(Msg.SetEntryName(child.get('id', e.target.value)))
+                    })
+                  )
+                  : (
+                    h('.name', {
+                      onClick: e => {
+                        e.stopPropagation()
+                        dispatch(Msg.EditEntryName(child.get('id')))
+                      }
+                    }, child.get('name'))
+                  ),
+                h('.content', child.get('content'))
               ])
             ))
             .toArray()

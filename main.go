@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
@@ -36,6 +37,20 @@ func main() {
 		}
 
 		handle(pg, conn)
+	})
+
+	http.HandleFunc("/picture/", func(w http.ResponseWriter, r *http.Request) {
+		paths := strings.Split(r.URL.Path, "/")
+		user := paths[len(paths)-1]
+		pic, err := userPicture(pg, user)
+
+		w.Header().Set("Cache-Control", "max-age=3600")
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		http.Redirect(w, r, pic, 302)
 	})
 
 	http.Handle("/", http.FileServer(http.Dir("./client")))

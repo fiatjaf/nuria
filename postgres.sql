@@ -1,7 +1,8 @@
 CREATE TABLE users (
   id serial PRIMARY KEY,
   name text,
-  email text
+  email text,
+  picture text
 );
 
 CREATE TABLE entries (

@@ -26,6 +26,23 @@ WHERE users.name = $1
 	return
 }
 
+func userPicture(pg *sqlx.DB, user string) (pic string, err error) {
+	err = pg.Get(&pic, `
+SELECT
+  CASE WHEN picture IS NOT NULL THEN picture
+  ELSE
+    CASE WHEN email IS NOT NULL THEN
+      'https://www.gravatar.com/avatar/' || md5(email) ||
+      '?d=https://robohash.org/' || $1 || '.png'
+    ELSE
+      'https://robohash.org/' || $1 || '.png'
+    END
+  END
+FROM users WHERE name = $1
+    `, user)
+	return
+}
+
 func fetchEntry(pg *sqlx.DB, user string, entryId string) (entry Entry, err error) {
 	err = pg.Get(&entry, `
 SELECT

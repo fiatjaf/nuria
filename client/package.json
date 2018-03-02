@@ -3,6 +3,7 @@
     "hashbow": "^1.1.1",
     "history": "^4.7.2",
     "immutable": "^4.0.0-rc.9",
+    "intersperse": "^1.0.0",
     "raj": "0.0.10",
     "raj-react": "0.0.4",
     "raj-spa": "0.0.12",

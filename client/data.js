@@ -4,7 +4,7 @@ const {Record, Map, List, Set} = require('immutable')
 
 const Entry = Record({
   id: null,
-  key: List(),
+  key: [],
   name: '',
   content: '',
   tags: Set(),
@@ -61,7 +61,7 @@ function sync (username) {
         let entryData = m.entry
         base.entries = base.entries.set(entryData.id, new Entry({
           id: entryData.id,
-          key: List(entryData.key),
+          key: entryData.key,
           name: entryData.name,
           content: entryData.content,
           tags: Set(entryData.tags),

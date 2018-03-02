@@ -2,6 +2,7 @@ const {PureComponent, Component} = require('react')
 const {isImmutable, Record, Map} = require('immutable')
 const h = require('react-hyperscript')
 const {union} = require('tagmeme')
+const intersperse = require('intersperse')
 const hashbow = require('hashbow')
 const ReactTagsInput = require('react-tagsinput')
 const ReactAutosizeInput = require('react-input-autosize').default
@@ -81,7 +82,6 @@ function update (msg, state) {
 }
 
 function view (state, dispatch) {
-  console.log(state.toJS())
   let entry = state.get('all_entries').get(state.get('main_entry'))
   let [eKey, eVal] = state.get('editing')
 
@@ -89,6 +89,13 @@ function view (state, dispatch) {
     ? (
       h('main', [
         h('div#entry', [
+          h('.key', intersperse(entry.key
+            .map((id, i) =>
+              h('a.partial-id', {
+                href: '#/' + entry.key.slice(0, i + 1).join('/')
+              }, id)
+            ), h('span.separator', '/')
+          )),
           h('.name', eKey === 'name'
             ? [
               h(EditName, {

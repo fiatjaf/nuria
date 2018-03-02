@@ -1,9 +1,10 @@
-const {PureComponent} = require('react')
+const {PureComponent, Component} = require('react')
 const {Record, Map} = require('immutable')
 const h = require('react-hyperscript')
 const {union} = require('tagmeme')
 const hashbow = require('hashbow')
 const ReactGridLayout = require('react-grid-layout')
+const enhanceWithClickOutside = require('react-click-outside')
 
 const data = require('./data')
 const {User} = data
@@ -84,11 +85,9 @@ function view (state, dispatch) {
         h('div#entry', [
           h('.name', eKey === 'name'
             ? [
-              h('input.mousetrap', {
-                value: eVal,
-                onChange: e => {
-                  dispatch(Msg.Edit(['name', e.target.value]))
-                }
+              h(EditName, {
+                dispatch,
+                value: eVal
               })
             ]
             : [
@@ -169,6 +168,30 @@ function view (state, dispatch) {
       h('div', 'loading')
     )
 }
+
+const EditName = enhanceWithClickOutside(class extends Component {
+  handleClickOutside () {
+    this.props.dispatch(Msg.FinishEditing())
+  }
+
+  render () {
+    return (
+      h('input', {
+        value: this.props.value,
+        onChange: e => {
+          this.props.dispatch(Msg.Edit(['name', e.target.value]))
+        },
+        onKeyDown: e => {
+          if (e.which === 27) {
+            this.props.dispatch(Msg.CancelEditing())
+          } else if (e.which === 13) {
+            this.props.dispatch(Msg.FinishEditing())
+          }
+        }
+      })
+    )
+  }
+})
 
 class ChildEntry extends PureComponent {
   render () {

@@ -6,6 +6,7 @@ const {program} = require('raj-react')
 const data = require('./data')
 const entryProgram = require('./entry')
 const {Model, Msg} = require('./entry')
+
 require('./style.scss')
 
 const history = require('history').createHashHistory()

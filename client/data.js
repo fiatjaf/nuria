@@ -90,7 +90,7 @@ function set (entryId, [what, value]) {
     kind: 'update-entry',
     id: entryId,
     key: what,
-    value
+    value: what === 'tags' ? `{${value.join(',')}}` : value
   }))
 }
 

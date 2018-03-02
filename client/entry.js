@@ -1,8 +1,10 @@
 const {PureComponent, Component} = require('react')
-const {Record, Map} = require('immutable')
+const {isImmutable, Record, Map} = require('immutable')
 const h = require('react-hyperscript')
 const {union} = require('tagmeme')
 const hashbow = require('hashbow')
+const ReactTagsInput = require('react-tagsinput')
+const ReactAutosizeInput = require('react-input-autosize').default
 const ReactGridLayout = require('react-grid-layout')
 const enhanceWithClickOutside = require('react-click-outside')
 
@@ -44,13 +46,17 @@ function update (msg, state) {
       state.set('all_entries', entries),
       undefined
     ],
-    'StartEditing': what => [
-      state.set('editing', [
-        what,
-        state.get('all_entries').get(state.get('main_entry')).get(what)
-      ]),
-      undefined
-    ],
+    'StartEditing': what => {
+      var val = state.get('all_entries').get(state.get('main_entry')).get(what)
+      if (isImmutable(val)) {
+        val = val.toJS()
+      }
+
+      return [
+        state.set('editing', [what, val]),
+        undefined
+      ]
+    },
     'Edit': tuple => [
       state.set('editing', tuple),
       undefined
@@ -91,14 +97,32 @@ function view (state, dispatch) {
               })
             ]
             : [
-              h('span', {
+              h('.wrapper', {
                 onClick: () => dispatch(Msg.StartEditing('name'))
               }, entry.get('name'))
             ]
           ),
-          h('div', entry.get('tags')
-            .map(l => h('.tag', {style: {background: hashbow(l, 28)}}, l))
-            .toArray()
+          h('.tags', eKey === 'tags'
+            ? [
+              h(EditTags, {
+                tags: eVal,
+                dispatch
+              })
+            ]
+            : [
+              h('.wrapper', {
+                onClick: () => {
+                  dispatch(Msg.StartEditing('tags'))
+                }
+              }, entry.get('tags')
+                .map(t =>
+                  h('.tag', {
+                    style: {backgroundColor: hashbow(t)}
+                  }, t)
+                )
+                .toArray()
+              )
+            ]
           ),
           h('.content', entry.get('content')),
           h('div', entry.get('members')
@@ -168,6 +192,59 @@ function view (state, dispatch) {
       h('div', 'loading')
     )
 }
+
+const EditTags = enhanceWithClickOutside(class extends Component {
+  handleClickOutside () {
+    this.props.dispatch(Msg.FinishEditing())
+  }
+
+  render () {
+    return (
+      h(ReactTagsInput, {
+        value: this.props.tags,
+        onChange: tags => {
+          this.props.dispatch(Msg.Edit(['tags', tags]))
+        },
+        addOnPaste: true,
+        addOnBlur: true,
+        addKeys: [9, 13, 32, 188, 109],
+        renderTag: props =>
+          h('span.tag', {
+            className: props.className,
+            key: props.key,
+            style: {backgroundColor: hashbow(props.tag)}
+          }, [
+            props.tag,
+            h('a', {
+              className: props.classNameRemove,
+              onClick: e => {
+                props.onRemove(props.key)
+              }
+            })
+          ]),
+        renderInput: props =>
+          h(ReactAutosizeInput, {
+            type: 'text',
+            value: props.value,
+            onChange: props.onChange,
+            className: props.className,
+            onBlur: props.onBlur,
+            onFocus: props.onFocus,
+            onPaste: props.onPaste,
+            onKeyDown: e => {
+              if (e.which === 27) {
+                this.props.dispatch(Msg.CancelEditing())
+              } else if (e.which === 13) {
+                this.props.dispatch(Msg.FinishEditing())
+              } else {
+                props.onKeyDown(e)
+              }
+            }
+          })
+      })
+    )
+  }
+})
 
 const EditName = enhanceWithClickOutside(class extends Component {
   handleClickOutside () {

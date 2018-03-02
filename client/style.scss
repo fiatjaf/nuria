@@ -31,19 +31,70 @@ main {
   padding: 15px;
   position: relative;
 
+  .wrapper {
+    min-height: 20px;
+    width: 100%;
+  }
+
   .name {
     font-size: 113%;
     margin: 5px 0;
   }
 
-  .tag {
-    display: inline-block;
-    padding: 2px 8px;
-    background: black;
-    color: white;
-    margin: 1px 3px;
-    font-size: 80%;
-    border-radius: 6px;
+  .tags {
+    text-align: left;
+
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      background: black;
+      color: white;
+      margin: 1px 3px;
+      font-size: 80%;
+      border-radius: 6px;
+      border: none;
+    }
+
+    .react-tagsinput {
+      text-align: left;
+      padding: 2px 2px 0 0;
+      background: rgba(245, 245, 220, 0.2);
+
+      & > span {
+        display: flex;
+        flex-wrap: wrap;
+
+        & > * {
+          flex: auto;
+        }
+      }
+    }
+
+    .react-tagsinput-input {
+      flex-grow: 3;
+
+      input {
+        min-width: 100%;
+        padding: 5px;
+        background-color: inherit;
+        color: inherit;
+        border: 0;
+        outline: none;
+      }
+    }
+
+    .react-tagsinput-tag {
+      flex-shrink: 3;
+
+      a::before {
+        content: " ×";
+      }
+    }
+
+    .react-tagsinput-remove {
+      cursor: pointer;
+      font-weight: bold;
+    }
   }
 
   .content {

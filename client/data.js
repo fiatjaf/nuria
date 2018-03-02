@@ -29,12 +29,23 @@ const Comment = Record({
   author: new User()
 })
 
+var base = {
+  entries: Map()
+}
+
 module.exports.User = User
 module.exports.Entry = Entry
 module.exports.Comment = Comment
 module.exports.sync = sync
+module.exports.base = base
+module.exports.onEntriesUpdated = onEntriesUpdated
 
-function sync (username, setEntry) {
+var entriesUpdated
+function onEntriesUpdated (fn) {
+  entriesUpdated = fn
+}
+
+function sync (username) {
   var ws = new WebSocket(
     location.protocol.replace('http', 'ws') + '//' + location.host + '/ws'
   )
@@ -48,7 +59,7 @@ function sync (username, setEntry) {
     switch (m.kind) {
       case 'entry':
         let entryData = m.entry
-        setEntry(new Entry({
+        base.entries = base.entries.set(entryData.id, new Entry({
           id: entryData.id,
           key: List(entryData.key),
           name: entryData.name,
@@ -62,6 +73,9 @@ function sync (username, setEntry) {
           //   return new Comment(c)
           // }))
         }))
+        if (entriesUpdated) {
+          entriesUpdated(base.entries)
+        }
 
         break
     }

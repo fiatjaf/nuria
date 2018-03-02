@@ -1,9 +1,11 @@
 {
   "dependencies": {
     "hashbow": "^1.1.1",
+    "history": "^4.7.2",
     "immutable": "^4.0.0-rc.9",
     "raj": "0.0.10",
     "raj-react": "0.0.4",
+    "raj-spa": "0.0.12",
     "react": "^16.2.0",
     "react-dom": "^16.2.0",
     "react-grid-layout": "^0.16.4",
@@ -21,6 +23,6 @@
     ]
   },
   "scripts": {
-    "watch": "ls data.js app.js style.scss | entr browserifyinc -vd app.js -o bundle.js"
+    "watch": "ls entry.js data.js app.js style.scss | entr browserifyinc -vd app.js -o bundle.js"
   }
 }

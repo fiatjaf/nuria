@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/jmoiron/sqlx"
@@ -89,12 +90,16 @@ VALUES
 	return
 }
 
-func updateEntry(pg *sqlx.DB, user string, entry Entry) (err error) {
+func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
+	if key != "name" && key != "content" && key != "tags" {
+		return errors.New("unnalowed property: " + key)
+	}
+
 	_, err = pg.Exec(`
-UPDATE entries SET name=$1, content=$2, tags=$3
-WHERE id = $5
- AND can_write($4, entries.id)
-    `, entry.Name, entry.Content, toPGArray(entry.Tags), user, entry.Id)
+UPDATE entries SET `+key+`=$1
+WHERE id = $2
+  AND can_write($3, entries.id)
+    `, value, entryId, user)
 	return
 }
 

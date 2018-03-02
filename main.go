@@ -61,9 +61,12 @@ func main() {
 }
 
 type msg struct {
-	Kind  string `json:"kind"`
-	User  string `json:"user,omitempty"`
-	Entry Entry  `json:"entry,omitempty"`
+	Kind    string      `json:"kind"`
+	User    string      `json:"user,omitempty"`
+	Entry   Entry       `json:"entry,omitempty"`
+	EntryId string      `json:"id,omitempty"`
+	Key     string      `json:"key,omitempty"`
+	Value   interface{} `json:"value,omitempty"`
 }
 
 func handle(pg *sqlx.DB, conn *websocket.Conn) {
@@ -129,10 +132,10 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 			break
 		case "update-entry":
 			log.Debug().
-				Str("entry", m.Entry.Id).
+				Str("entry", m.EntryId).
 				Str("user", user).
 				Msg("updating")
-			err := updateEntry(pg, user, m.Entry)
+			err := updateEntry(pg, user, m.EntryId, m.Key, m.Value)
 			if err != nil {
 				log.Warn().
 					Err(err).
@@ -140,16 +143,16 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 				continue
 			}
 
-			entry, err := fetchEntry(pg, user, m.Entry.Id)
+			entry, err := fetchEntry(pg, user, m.EntryId)
 			if err != nil {
 				log.Error().
-					Str("entry", m.Entry.Id).
+					Str("entry", m.EntryId).
 					Err(err).
 					Msg("failed to fetchEntry on update-entry")
 				continue
 			}
 
-			if tmp, ok := subscriptions.Get(m.Entry.Id); ok {
+			if tmp, ok := subscriptions.Get(m.EntryId); ok {
 				conns := tmp.(cmap.ConcurrentMap)
 				for _, iconn := range conns.Items() {
 					conn := iconn.(*websocket.Conn)

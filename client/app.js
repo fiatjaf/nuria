@@ -2,6 +2,7 @@ const React = require('react')
 const {render} = require('react-dom')
 const spa = require('raj-spa')
 const {program} = require('raj-react')
+const Mousetrap = require('mousetrap')
 
 const data = require('./data')
 const entryProgram = require('./entry')
@@ -22,15 +23,24 @@ function main () {
   )
 }
 
+var globalDispatch = () => {}
+Mousetrap.bind('esc', () => {
+  globalDispatch(Msg.CancelEditing())
+})
+Mousetrap.bind('enter', () => {
+  globalDispatch(Msg.FinishEditing())
+})
+
 function getRouteProgram (location) {
   return entryProgram([
     new Model({
       me: window.user.name,
       all_entries: new Map(data.base.entries),
-      main_entry: location.pathname.split('/').slice(-1)[0]
+      main_entry: location.pathname.split('/').filter(x => x).slice(-1)[0]
     }),
     dispatch => {
       data.onEntriesUpdated(entries => dispatch(Msg.EntriesUpdated(entries)))
+      globalDispatch = dispatch
     }
   ])
 }

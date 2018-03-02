@@ -1,3 +1,4 @@
+const {PureComponent} = require('react')
 const {Record, Map} = require('immutable')
 const h = require('react-hyperscript')
 const {union} = require('tagmeme')
@@ -5,7 +6,7 @@ const hashbow = require('hashbow')
 const ReactGridLayout = require('react-grid-layout')
 
 const data = require('./data')
-const {User, Comment} = data
+const {User} = data
 
 module.exports = function (init) {
   return {
@@ -19,18 +20,20 @@ const Model = Record({
   me: new User(),
   main_entry: null,
   all_entries: Map(),
-  show_comments: false
+  show_comments: false,
+  editing: [null]
 })
 
 module.exports.Model = Model
 
 const Msg = module.exports.Msg = union([
   'EntriesUpdated',
-  'EditName',
-  'SetName',
+  'StartEditing',
+  'Edit',
+  'FinishEditing',
+  'CancelEditing',
   'ToggleComments',
-  'AddComment',
-  'AddedComment'
+  'AddComment'
 ])
 
 function update (msg, state) {
@@ -40,15 +43,24 @@ function update (msg, state) {
       state.set('all_entries', entries),
       undefined
     ],
-    'EditName': entryId => [
-      state.setIn(['all_entries', entryId, 'editing_name'], true),
+    'StartEditing': what => [
+      state.set('editing', [
+        what,
+        state.get('all_entries').get(state.get('main_entry')).get(what)
+      ]),
       undefined
     ],
-    'SetName': (entryId, name) => [
-      state.setIn(['all_entries', entryId, 'editing_name'], false),
-      dispatch => data.setEntryName(entryId, name)
-        .then()
-        .catch(console.log)
+    'Edit': tuple => [
+      state.set('editing', tuple),
+      undefined
+    ],
+    'FinishEditing': () => [
+      state.set('editing', [null]),
+      () => data.set(state.get('main_entry'), state.get('editing'))
+    ],
+    'CancelEditing': () => [
+      state.set('editing', [null]),
+      undefined
     ],
     'ToggleComments': () => [
       state.update('show_comments', show => !show),
@@ -56,19 +68,7 @@ function update (msg, state) {
     ],
     'AddComment': content => [
       state,
-      dispatch => data.addComment(state.getIn(['entry', 'id']), content)
-        .then(id => {
-          let comment = new Comment({
-            id,
-            content,
-            author: state.get('me')
-          })
-          dispatch(Msg.AddedComment(comment))
-        })
-    ],
-    'AddedComment': comment => [
-      state.updateIn(['entry', 'comments'], comments => comments.unshift(comment)),
-      undefined
+      () => data.addComment(state.get('main_entry'), content)
     ]
   })
 }
@@ -76,11 +76,27 @@ function update (msg, state) {
 function view (state, dispatch) {
   console.log(state.toJS())
   let entry = state.get('all_entries').get(state.get('main_entry'))
+  let [eKey, eVal] = state.get('editing')
+
   return entry
     ? (
       h('main', [
         h('div#entry', [
-          h('.name', entry.get('name')),
+          h('.name', eKey === 'name'
+            ? [
+              h('input.mousetrap', {
+                value: eVal,
+                onChange: e => {
+                  dispatch(Msg.Edit(['name', e.target.value]))
+                }
+              })
+            ]
+            : [
+              h('span', {
+                onClick: () => dispatch(Msg.StartEditing('name'))
+              }, entry.get('name'))
+            ]
+          ),
           h('div', entry.get('tags')
             .map(l => h('.tag', {style: {background: hashbow(l, 28)}}, l))
             .toArray()
@@ -109,16 +125,7 @@ function view (state, dispatch) {
           }, entry.get('children')
             .map(id => state.get('all_entries').get(id))
             .filter(x => x)
-            .map(child => (
-              h('div.entry', {
-                key: child.get('id')
-              }, [
-                h('a.name', {
-                  href: `#/${child.get('key').join('/')}`
-                }, child.get('name')),
-                h('.content', child.get('content'))
-              ])
-            ))
+            .map(child => h(ChildEntry, {key: child.get('id'), child}))
             .toArray()
           )
         ]),
@@ -161,4 +168,19 @@ function view (state, dispatch) {
     : (
       h('div', 'loading')
     )
+}
+
+class ChildEntry extends PureComponent {
+  render () {
+    let child = this.props.child
+
+    return (
+      h('div.entry', [
+        h('a.name', {
+          href: `#/${child.get('key').join('/')}`
+        }, child.get('name')),
+        h('.content', child.get('content'))
+      ])
+    )
+  }
 }

@@ -11,10 +11,7 @@ const Entry = Record({
   members: Set(),
   children: Map(),
   comments: List(),
-  layout: [],
-
-  editing_name: false,
-  editing_content: false
+  layout: []
 })
 
 const User = Record({
@@ -38,6 +35,8 @@ module.exports.Entry = Entry
 module.exports.Comment = Comment
 module.exports.sync = sync
 module.exports.base = base
+module.exports.set = set
+module.exports.addComment = addComment
 module.exports.onEntriesUpdated = onEntriesUpdated
 
 var entriesUpdated
@@ -45,8 +44,9 @@ function onEntriesUpdated (fn) {
   entriesUpdated = fn
 }
 
+var ws
 function sync (username) {
-  var ws = new WebSocket(
+  ws = new WebSocket(
     location.protocol.replace('http', 'ws') + '//' + location.host + '/ws'
   )
   ws.onerror = function (e) {
@@ -85,6 +85,15 @@ function sync (username) {
   }
 }
 
-module.exports.addComment = function addComment (entryId, content) {
+function set (entryId, [what, value]) {
+  ws.send(JSON.stringify({
+    kind: 'update-entry',
+    id: entryId,
+    key: what,
+    value
+  }))
+}
+
+function addComment (entryId, content) {
   return Promise.resolve('xywytwik')
 }

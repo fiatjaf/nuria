@@ -1,92 +1,20 @@
 const {PureComponent, Component} = require('react')
-const {isImmutable, Record, Map} = require('immutable')
 const h = require('react-hyperscript')
-const {union} = require('tagmeme')
 const intersperse = require('intersperse')
 const hashbow = require('hashbow')
 const ReactTagsInput = require('react-tagsinput')
-const ReactAutosizeInput = require('react-input-autosize').default
-const ReactGridLayout = require('react-grid-layout')
 const enhanceWithClickOutside = require('react-click-outside')
 
-const data = require('./data')
-const {User} = data
+import ReactAutosizeInput from 'react-input-autosize'
 
-module.exports = function (init) {
-  return {
-    init,
-    update,
-    view
-  }
-}
+import { Msg } from './program'
+import ListEntries from './list-entries'
 
-const Model = Record({
-  me: new User(),
-  main_entry: null,
-  all_entries: Map(),
-  show_comments: false,
-  editing: [null]
-})
+export default class Entry extends PureComponent {
+  render () {
+    let {state, dispatch, entry, eKey, eVal} = this.props
 
-module.exports.Model = Model
-
-const Msg = module.exports.Msg = union([
-  'EntriesUpdated',
-  'StartEditing',
-  'Edit',
-  'FinishEditing',
-  'CancelEditing',
-  'ToggleComments',
-  'AddComment'
-])
-
-function update (msg, state) {
-  console.log(msg)
-  return Msg.match(msg, {
-    'EntriesUpdated': entries => [
-      state.set('all_entries', entries),
-      undefined
-    ],
-    'StartEditing': what => {
-      var val = state.get('all_entries').get(state.get('main_entry')).get(what)
-      if (isImmutable(val)) {
-        val = val.toJS()
-      }
-
-      return [
-        state.set('editing', [what, val]),
-        undefined
-      ]
-    },
-    'Edit': tuple => [
-      state.set('editing', tuple),
-      undefined
-    ],
-    'FinishEditing': () => [
-      state.set('editing', [null]),
-      () => data.set(state.get('main_entry'), state.get('editing'))
-    ],
-    'CancelEditing': () => [
-      state.set('editing', [null]),
-      undefined
-    ],
-    'ToggleComments': () => [
-      state.update('show_comments', show => !show),
-      undefined
-    ],
-    'AddComment': content => [
-      state,
-      () => data.addComment(state.get('main_entry'), content)
-    ]
-  })
-}
-
-function view (state, dispatch) {
-  let entry = state.get('all_entries').get(state.get('main_entry'))
-  let [eKey, eVal] = state.get('editing')
-
-  return entry
-    ? (
+    return (
       h('main', [
         h('div#entry', [
           h('.key', intersperse(entry.key
@@ -146,19 +74,10 @@ function view (state, dispatch) {
             .toArray()
           )
         ]),
-        h('div#entries', [
-          h(ReactGridLayout, {
-            rowHeight: 77,
-            layout: entry.get('layout'),
-            cols: 12,
-            width: 1000
-          }, entry.get('children')
-            .map(id => state.get('all_entries').get(id))
-            .filter(x => x)
-            .map(child => h(ChildEntry, {key: child.get('id'), child}))
-            .toArray()
-          )
-        ]),
+        h(ListEntries, {
+          all_entries: state.get('all_entries'),
+          entries: entry.get('children')
+        }),
         h('a#comment-handle', {
           className: state.get('show_comments') ? 'is-open' : '',
           onClick: () => dispatch(Msg.ToggleComments())
@@ -195,12 +114,10 @@ function view (state, dispatch) {
         ])
       ])
     )
-    : (
-      h('div', 'loading')
-    )
+  }
 }
 
-const EditTags = enhanceWithClickOutside(class extends Component {
+export const EditTags = enhanceWithClickOutside(class extends Component {
   handleClickOutside () {
     this.props.dispatch(Msg.FinishEditing())
   }
@@ -253,7 +170,7 @@ const EditTags = enhanceWithClickOutside(class extends Component {
   }
 })
 
-const EditName = enhanceWithClickOutside(class extends Component {
+export const EditName = enhanceWithClickOutside(class extends Component {
   handleClickOutside () {
     this.props.dispatch(Msg.FinishEditing())
   }
@@ -276,18 +193,3 @@ const EditName = enhanceWithClickOutside(class extends Component {
     )
   }
 })
-
-class ChildEntry extends PureComponent {
-  render () {
-    let child = this.props.child
-
-    return (
-      h('div.entry', [
-        h('a.name', {
-          href: `#/${child.get('key').join('/')}`
-        }, child.get('name')),
-        h('.content', child.get('content'))
-      ])
-    )
-  }
-}

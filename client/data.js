@@ -2,7 +2,7 @@
 
 const {Record, Map, List, Set} = require('immutable')
 
-const Entry = Record({
+export const Entry = Record({
   id: null,
   key: [],
   name: '',
@@ -10,42 +10,32 @@ const Entry = Record({
   tags: Set(),
   members: Set(),
   children: Map(),
-  comments: List(),
-  layout: []
+  comments: List()
 })
 
-const User = Record({
+export const User = Record({
   id: null,
   username: '',
   picture: ''
 })
 
-const Comment = Record({
+export const Comment = Record({
   id: null,
   content: '',
   author: new User()
 })
 
-var base = {
+export var base = {
   entries: Map()
 }
 
-module.exports.User = User
-module.exports.Entry = Entry
-module.exports.Comment = Comment
-module.exports.sync = sync
-module.exports.base = base
-module.exports.set = set
-module.exports.addComment = addComment
-module.exports.onEntriesUpdated = onEntriesUpdated
-
 var entriesUpdated
-function onEntriesUpdated (fn) {
+export function onEntriesUpdated (fn) {
   entriesUpdated = fn
 }
 
 var ws
-function sync (username) {
+export function sync (username) {
   ws = new WebSocket(
     location.protocol.replace('http', 'ws') + '//' + location.host + '/ws'
   )
@@ -85,7 +75,7 @@ function sync (username) {
   }
 }
 
-function set (entryId, [what, value]) {
+export function set (entryId, [what, value]) {
   ws.send(JSON.stringify({
     kind: 'update-entry',
     id: entryId,
@@ -94,6 +84,6 @@ function set (entryId, [what, value]) {
   }))
 }
 
-function addComment (entryId, content) {
+export function addComment (entryId, content) {
   return Promise.resolve('xywytwik')
 }

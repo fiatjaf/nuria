@@ -3,11 +3,10 @@ const {render} = require('react-dom')
 const spa = require('raj-spa')
 const {program} = require('raj-react')
 
-const data = require('./data')
-const entryProgram = require('./entry')
-const {Model, Msg} = require('./entry')
-
 require('./style.scss')
+
+import * as data from './data'
+import entryProgram, { Model, Msg } from './program'
 
 const history = require('history').createHashHistory()
 

@@ -10,8 +10,9 @@
     "react": "^16.2.0",
     "react-autosuggest": "^9.3.4",
     "react-click-outside": "^3.0.1",
+    "react-dnd": "^2.5.4",
+    "react-dnd-html5-backend": "^2.5.4",
     "react-dom": "^16.2.0",
-    "react-grid-layout": "^0.16.4",
     "react-hyperscript": "^3.1.0",
     "react-input-autosize": "^2.2.1",
     "react-tagsinput": "^3.19.0",
@@ -20,14 +21,23 @@
   "devDependencies": {
     "browserify": "^16.1.0",
     "browserify-incremental": "^3.1.1",
+    "rollup-plugin-commonjs": "^8.3.0",
+    "rollup-plugin-node-resolve": "^3.0.3",
+    "rollupify": "^0.4.0",
     "scssify": "^3.0.1"
   },
   "browserify": {
     "transform": [
-      "scssify"
+      "scssify",
+      [
+        "rollupify",
+        {
+          "config": "rollup.config.js"
+        }
+      ]
     ]
   },
   "scripts": {
-    "watch": "ls entry.js data.js app.js style.scss | entr browserifyinc -vd app.js -o bundle.js"
+    "watch": "ls entry.js data.js app.js program.js list-entries.js child-entry.js style.scss | entr browserifyinc -vd app.js -o bundle.js"
   }
 }

@@ -148,12 +148,18 @@ main {
   flex-grow: 3;
   padding: 18px;
   overflow-y: auto;
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .entry {
-  padding: 8px;
+  padding: 6px;
   background-color: rgba(255, 255, 255, 0.6);
   border-radius: 5px;
+  margin: 4px;
+  min-height: 40px;
+  min-width: 40px;
 
   .name {
     font-size: 110%;

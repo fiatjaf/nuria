@@ -11,8 +11,9 @@ CREATE TABLE entries (
   tags text[] NOT NULL DEFAULT '{}',
   name text NOT NULL DEFAULT '',
   content text NOT NULL DEFAULT '',
+  disposition text[][] NOT NULL DEFAULT '{}',
 
-  CHECK (id = ANY (key))
+  CONSTRAINT id_on_key CHECK (id = key[cardinality(key)])
 );
 CREATE INDEX ON entries USING GIN(key);
 

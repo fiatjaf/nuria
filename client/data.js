@@ -10,7 +10,8 @@ export const Entry = Record({
   tags: Set(),
   members: Set(),
   children: Map(),
-  comments: List()
+  comments: List(),
+  disposition: List()
 })
 
 export const User = Record({
@@ -56,7 +57,8 @@ export function sync (username) {
           content: entryData.content,
           tags: Set(entryData.tags),
           children: List(entryData.children),
-          members: Set(entryData.members)
+          members: Set(entryData.members),
+          disposition: List(entryData.disposition)
 
           // data.comments = List(data.comments.map(c => {
           //   c.author = new User(c.author)

@@ -1,12 +1,11 @@
 const {PureComponent, Component} = require('react')
-const h = require('react-hyperscript')
 const intersperse = require('intersperse')
-const hashbow = require('hashbow')
 const enhanceWithClickOutside = require('react-click-outside')
-
-import ReactAutosizeInput from 'react-input-autosize'
-import TextareaAutosize from 'react-autosize-textarea'
-import ReactTagsInput from 'react-tagsinput'
+const hashbow = require('hashbow')
+const h = require('react-hyperscript')
+const ReactAutosizeInput = require('react-input-autosize').default
+const TextareaAutosize = require('react-autosize-textarea').default
+const ReactTagsInput = require('react-tagsinput')
 
 import { Msg } from './program'
 import ListEntries from './list-entries'
@@ -87,10 +86,13 @@ export default class Entry extends PureComponent {
             .toArray()
           )
         ]),
-        h(ListEntries, {
-          all_entries: state.get('all_entries'),
-          entries: entry.get('children')
-        }),
+        h('#entries', [
+          h(ListEntries, {
+            entries: entry.get('children'),
+            disposition: entry.get('disposition'),
+            all_entries: state.get('all_entries')
+          })
+        ]),
         h('a#comment-handle', {
           className: state.get('show_comments') ? 'is-open' : '',
           onClick: () => dispatch(Msg.ToggleComments())

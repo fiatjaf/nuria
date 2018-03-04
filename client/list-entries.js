@@ -1,78 +1,149 @@
+const { List } = require('immutable')
 const { Component } = require('react')
-const h = require('react-hyperscript')
-const { DragDropContext } = require('react-dnd')
+const { DragDropContext, DropTarget } = require('react-dnd')
 const HTML5Backend = require('react-dnd-html5-backend')
+const h = require('react-hyperscript')
 
 import ChildEntry from './child-entry'
-
-const requestAnimationFrame = window.requestAnimationFrame
-const cancelAnimationFrame = window.cancelAnimationFrame
 
 export default DragDropContext(HTML5Backend)(class extends Component {
   constructor (props) {
     super(props)
 
     this.moveEntry = this.moveEntry.bind(this)
-    this.drawFrame = this.drawFrame.bind(this)
-
     this.state = {
-      entriesByIndex: props.entries.toArray()
+      disposition: this.getActualDisposition(props)
     }
   }
 
   componentWillReceiveProps (props) {
-    if (this.props.entries !== props.entries) {
-      this.setState({ entriesByIndex: props.entries.toArray() })
+    if (this.props.disposition !== props.disposition) {
+      this.setState({
+        disposition: this.getActualDisposition(props)
+      })
     }
+  }
+
+  getActualDisposition (props) {
+    var disposition = []
+    var remaining = props.entries
+
+    props.disposition.forEach(ids => {
+      disposition.push(ids)
+
+      for (let i = 0; i < ids.length; i++) {
+        let id = ids[i]
+        let idx = remaining.findIndex(id)
+        remaining = remaining.delete(idx)
+      }
+    })
+
+    disposition.unshift([])
+    disposition.push(remaining.toArray())
+
+    return disposition
+  }
+
+  shouldComponentUpdate (props, state) {
+    if (this.state.disposition !== state.disposition) {
+      return true
+    }
+
+    for (let k in props) {
+      if (props[k] !== this.props[k]) return true
+    }
+    return false
   }
 
   render () {
     let {all_entries} = this.props
-    let {entriesByIndex} = this.state
+    let {disposition} = this.state
 
-    return (
-      h('div#entries', entriesByIndex
-        .map(id => all_entries.get(id))
-        .filter(x => x)
-        .map(child => (
-          h(ChildEntry, {
-            key: child.get('id'),
-            moveEntry: this.moveEntry,
-            child
-          })
-        ))
-      )
+    return disposition.map((ids, i) =>
+      h(EntryColumn, {
+        key: i,
+        col: i,
+        entries: List(ids)
+          .map(id => all_entries.get(id))
+          .filter(x => x),
+        moveEntry: this.moveEntry
+      })
     )
   }
 
-  moveEntry (id, afterId) {
-    var {entriesByIndex} = this.state
+  moveEntry (id, afterId, toColumnIndex) {
+    var disposition = this.state.disposition.slice(0)
 
-    const entryIndex = entriesByIndex.indexOf(id)
-    const afterIndex = entriesByIndex.indexOf(afterId)
-
-    this.scheduleUpdate(state => {
-      state.entriesByIndex.splice(entryIndex, 1)
-      state.entriesByIndex.splice(afterIndex, 0, id)
-      return state
-    })
-  }
-
-  componentWillUnmount () {
-    cancelAnimationFrame(this.requestedFrame)
-  }
-
-  scheduleUpdate (updateFn) {
-    this.pendingUpdateFn = updateFn
-
-    if (!this.requestedFrame) {
-      this.requestedFrame = requestAnimationFrame(this.drawFrame)
+    let toColumn = disposition[toColumnIndex]
+    if (!toColumn) {
+      toColumn = []
+      disposition.push(toColumn)
     }
-  }
 
-  drawFrame () {
-    this.setState(this.pendingUpdateFn)
-    this.pendingUpdateFn = null
-    this.requestedFrame = null
+    let afterIndex = toColumn.indexOf(afterId)
+
+    for (let i = 0; i < disposition.length; i++) {
+      let col = disposition[i]
+      let entryIndex = col.indexOf(id)
+      if (entryIndex !== -1) {
+        col.splice(entryIndex, 1)
+      }
+    }
+    toColumn.splice(afterIndex, 0, id)
+
+    this.setState({ disposition })
   }
 })
+
+class EntryColumn extends Component {
+  shouldComponentUpdate (nextProps) {
+    return !this.props.entries.equals(nextProps.entries)
+  }
+
+  render () {
+    return (
+      h('.entries-column', [
+        h('.new', '+')
+      ].concat(this.props.entries.isEmpty()
+        ? h(Placeholder, {
+          moveEntry: this.props.moveEntry,
+          col: this.props.col
+        })
+        : this.props.entries
+          .map(child => (
+            h(ChildEntry, {
+              key: child.get('id'),
+              moveEntry: this.props.moveEntry,
+              col: this.props.col,
+              child
+            })
+          ))
+          .toArray()
+      ))
+    )
+  }
+}
+
+const columnTarget = {
+  hover (props, monitor) {
+    let draggedId = monitor.getItem().id
+    props.moveEntry(draggedId, 0, props.col)
+  },
+  drop (props, monitor) {
+    console.log('drop', props, monitor)
+  }
+}
+
+const Placeholder = DropTarget('entry', columnTarget, connect => ({
+  connectDropTarget: connect.dropTarget()
+}))(
+  class extends Component {
+    render () {
+      let {connectDropTarget} = this.props
+
+      return connectDropTarget(
+        h('.placeholder')
+      )
+    }
+  }
+)

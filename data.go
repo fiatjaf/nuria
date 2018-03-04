@@ -9,13 +9,14 @@ import (
 )
 
 type Entry struct {
-	Id       string         `json:"id" db:"id"`
-	Key      pq.StringArray `json:"key" db:"key"`
-	Members  pq.StringArray `json:"members" db:"members"`
-	Tags     pq.StringArray `json:"tags" db:"tags"`
-	Name     string         `json:"name" db:"name"`
-	Content  string         `json:"content" db:"content"`
-	Children pq.StringArray `json:"children" db:"children"`
+	Id          string         `json:"id" db:"id"`
+	Key         pq.StringArray `json:"key" db:"key"`
+	Members     pq.StringArray `json:"members" db:"members"`
+	Tags        pq.StringArray `json:"tags" db:"tags"`
+	Name        string         `json:"name" db:"name"`
+	Content     string         `json:"content" db:"content"`
+	Children    pq.StringArray `json:"children" db:"children"`
+	Disposition pq.StringArray `json:"disposition" db:"disposition"`
 }
 
 func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
@@ -63,6 +64,7 @@ SELECT
     WHERE entries.key = child.key[1:cardinality(entries.key)]
       AND cardinality(child.key) = cardinality(entries.key) + 1
   ) as children
+, disposition
 FROM entries WHERE id = $1 AND can_read($2, entries.id);
     `, entryId, user)
 	return

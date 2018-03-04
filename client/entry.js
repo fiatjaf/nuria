@@ -88,6 +88,7 @@ export default class Entry extends PureComponent {
         ]),
         h('#entries', [
           h(ListEntries, {
+            dispatch,
             entries: entry.get('children'),
             disposition: entry.get('disposition'),
             all_entries: state.get('all_entries')

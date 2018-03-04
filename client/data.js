@@ -36,7 +36,9 @@ export function onEntriesUpdated (fn) {
 }
 
 var ws
-export function sync (username) {
+export function sync () {
+  let username = window.user.name
+
   ws = new WebSocket(
     location.protocol.replace('http', 'ws') + '//' + location.host + '/ws'
   )
@@ -78,11 +80,28 @@ export function sync (username) {
 }
 
 export function set (entryId, [what, value]) {
+  if (ws.readyState > WebSocket.OPEN) {
+    setTimeout(sync, 1)
+  }
+  if (ws.readyState !== WebSocket.OPEN) {
+    setTimeout(set, 1000, [entryId, [what, value]])
+    return
+  }
+
   ws.send(JSON.stringify({
     kind: 'update-entry',
     id: entryId,
     key: what,
-    value: what === 'tags' ? `{${value.join(',')}}` : value
+    value: what === 'disposition'
+      ? '{' +
+        value
+        .filter(col => col.length)
+        .map(col => `{${col.join(',')}}`)
+        .join(',') +
+        '}'
+      : what === 'tags'
+        ? `{${value.join(',')}}`
+        : value
   }))
 }
 

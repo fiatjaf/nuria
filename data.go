@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/types"
 	"github.com/lib/pq"
 )
 
@@ -16,7 +17,7 @@ type Entry struct {
 	Name        string         `json:"name" db:"name"`
 	Content     string         `json:"content" db:"content"`
 	Children    pq.StringArray `json:"children" db:"children"`
-	Disposition pq.StringArray `json:"disposition" db:"disposition"`
+	Disposition types.JSONText `json:"disposition" db:"disposition"`
 }
 
 func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
@@ -64,7 +65,7 @@ SELECT
     WHERE entries.key = child.key[1:cardinality(entries.key)]
       AND cardinality(child.key) = cardinality(entries.key) + 1
   ) as children
-, disposition
+, array_to_json(disposition) AS disposition
 FROM entries WHERE id = $1 AND can_read($2, entries.id);
     `, entryId, user)
 	return
@@ -93,7 +94,7 @@ VALUES
 }
 
 func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
-	if key != "name" && key != "content" && key != "tags" {
+	if key != "disposition" && key != "name" && key != "content" && key != "tags" {
 		return errors.New("unnalowed property: " + key)
 	}
 

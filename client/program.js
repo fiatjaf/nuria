@@ -28,6 +28,7 @@ export const Msg = union([
   'Edit',
   'FinishEditing',
   'CancelEditing',
+  'SaveDisposition',
   'ToggleComments',
   'AddComment'
 ])
@@ -61,6 +62,10 @@ function update (msg, state) {
     'CancelEditing': () => [
       state.set('editing', [null]),
       undefined
+    ],
+    'SaveDisposition': disposition => [
+      state,
+      data.set(state.get('main_entry'), ['disposition', disposition])
     ],
     'ToggleComments': () => [
       state.update('show_comments', show => !show),

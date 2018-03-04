@@ -10,7 +10,7 @@ import entryProgram, { Model, Msg } from './program'
 
 const history = require('history').createHashHistory()
 
-data.sync(window.user.name)
+data.sync()
 
 function main () {
   return React.createElement(

@@ -66,6 +66,3 @@ CREATE TABLE comments (
 
 
 
-
-
-

@@ -4,12 +4,14 @@ const { DragDropContext, DropTarget } = require('react-dnd')
 const HTML5Backend = require('react-dnd-html5-backend')
 const h = require('react-hyperscript')
 
+import { Msg } from './program'
 import ChildEntry from './child-entry'
 
 export default DragDropContext(HTML5Backend)(class extends Component {
   constructor (props) {
     super(props)
 
+    this.saveDisposition = this.saveDisposition.bind(this)
     this.moveEntry = this.moveEntry.bind(this)
     this.state = {
       disposition: this.getActualDisposition(props)
@@ -33,7 +35,7 @@ export default DragDropContext(HTML5Backend)(class extends Component {
 
       for (let i = 0; i < ids.length; i++) {
         let id = ids[i]
-        let idx = remaining.findIndex(id)
+        let idx = remaining.findIndex(thisid => thisid === id)
         remaining = remaining.delete(idx)
       }
     })
@@ -66,7 +68,8 @@ export default DragDropContext(HTML5Backend)(class extends Component {
         entries: List(ids)
           .map(id => all_entries.get(id))
           .filter(x => x),
-        moveEntry: this.moveEntry
+        moveEntry: this.moveEntry,
+        saveDisposition: this.saveDisposition
       })
     )
   }
@@ -93,6 +96,10 @@ export default DragDropContext(HTML5Backend)(class extends Component {
 
     this.setState({ disposition })
   }
+
+  saveDisposition () {
+    this.props.dispatch(Msg.SaveDisposition(this.state.disposition))
+  }
 })
 
 class EntryColumn extends Component {
@@ -107,6 +114,7 @@ class EntryColumn extends Component {
       ].concat(this.props.entries.isEmpty()
         ? h(Placeholder, {
           moveEntry: this.props.moveEntry,
+          saveDisposition: this.props.saveDisposition,
           col: this.props.col
         })
         : this.props.entries
@@ -114,6 +122,7 @@ class EntryColumn extends Component {
             h(ChildEntry, {
               key: child.get('id'),
               moveEntry: this.props.moveEntry,
+              saveDisposition: this.props.saveDisposition,
               col: this.props.col,
               child
             })
@@ -130,7 +139,7 @@ const columnTarget = {
     props.moveEntry(draggedId, 0, props.col)
   },
   drop (props, monitor) {
-    console.log('drop', props, monitor)
+    props.saveDisposition()
   }
 }
 

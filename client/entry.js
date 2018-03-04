@@ -2,10 +2,11 @@ const {PureComponent, Component} = require('react')
 const h = require('react-hyperscript')
 const intersperse = require('intersperse')
 const hashbow = require('hashbow')
-const ReactTagsInput = require('react-tagsinput')
 const enhanceWithClickOutside = require('react-click-outside')
 
 import ReactAutosizeInput from 'react-input-autosize'
+import TextareaAutosize from 'react-autosize-textarea'
+import ReactTagsInput from 'react-tagsinput'
 
 import { Msg } from './program'
 import ListEntries from './list-entries'
@@ -59,7 +60,19 @@ export default class Entry extends PureComponent {
               )
             ]
           ),
-          h('.content', entry.get('content')),
+          h('.content', eKey === 'content'
+            ? [
+              h(EditContent, {
+                dispatch,
+                value: eVal
+              })
+            ]
+            : [
+              h('.wrapper', {
+                onClick: () => dispatch(Msg.StartEditing('content'))
+              }, entry.get('content'))
+            ]
+          ),
           h('div', entry.get('members')
             .toSeq()
             .map(name => (
@@ -182,11 +195,35 @@ export const EditName = enhanceWithClickOutside(class extends Component {
         onChange: e => {
           this.props.dispatch(Msg.Edit(['name', e.target.value]))
         },
+        ref: el => el ? el.focus() : null,
         onKeyDown: e => {
           if (e.which === 27) {
             this.props.dispatch(Msg.CancelEditing())
           } else if (e.which === 13) {
             this.props.dispatch(Msg.FinishEditing())
+          }
+        }
+      })
+    )
+  }
+})
+
+export const EditContent = enhanceWithClickOutside(class extends Component {
+  handleClickOutside () {
+    this.props.dispatch(Msg.FinishEditing())
+  }
+
+  render () {
+    return (
+      h(TextareaAutosize, {
+        value: this.props.value,
+        onChange: e => {
+          this.props.dispatch(Msg.Edit(['content', e.target.value]))
+        },
+        ref: el => el ? el.textarea.focus() : null,
+        onKeyDown: e => {
+          if (e.which === 27) {
+            this.props.dispatch(Msg.CancelEditing())
           }
         }
       })

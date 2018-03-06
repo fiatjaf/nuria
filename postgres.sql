@@ -6,7 +6,6 @@ CREATE TABLE entries (
   content text NOT NULL DEFAULT '',
   disposition text[][] NOT NULL DEFAULT '{}',
   data jsonb NOT NULL DEFAULT '{}',
-  is_user bool NOT NULL DEFAULT false,
 
   CONSTRAINT id_on_key CHECK (id = key[cardinality(key)])
 );
@@ -18,7 +17,7 @@ CREATE VIEW users AS
   , name
   , data->>'email' AS email
   , data->>'picture' AS picture
-  FROM entries WHERE is_user;
+  FROM entries WHERE cardinality(key) = 1; -- every first-level key is an user.
 
 CREATE TABLE memberships (
   entry text REFERENCES entries (id) NOT NULL,

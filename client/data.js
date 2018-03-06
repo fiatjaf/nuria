@@ -13,7 +13,6 @@ export const Entry = Record({
   children: Set(),
   comments: List(),
   disposition: List(),
-  is_user: false,
   data: {}
 })
 

@@ -1,6 +1,7 @@
 /* global WebSocket */
 
 const {Record, Map, List, Set} = require('immutable')
+const cuid = require('cuid')
 
 export const Entry = Record({
   id: null,
@@ -53,10 +54,14 @@ export function sync () {
           key: entryData.key,
           name: entryData.name,
           content: entryData.content,
-          tags: Set(entryData.tags),
-          children: Set(entryData.children),
-          members: Set(entryData.members),
-          disposition: List(entryData.disposition)
+          tags: Set(entryData.tags || []),
+          children: Set(entryData.children || []),
+          members: Set(entryData.members || []),
+          disposition: List(
+            Array.isArray(entryData.disposition)
+              ? entryData.disposition
+              : []
+          )
 
           // data.comments = List(data.comments.map(c => {
           //   c.author = new User(c.author)
@@ -75,16 +80,33 @@ export function sync () {
   }
 }
 
-export function set (entryId, [what, value]) {
+function send (jsonMessage) {
   if (ws.readyState > WebSocket.OPEN) {
     setTimeout(sync, 1)
   }
   if (ws.readyState !== WebSocket.OPEN) {
-    setTimeout(set, 1000, [entryId, [what, value]])
+    setTimeout(send, 1000, jsonMessage)
     return
   }
 
-  ws.send(JSON.stringify({
+  ws.send(JSON.stringify(jsonMessage))
+}
+
+export function newEntry (parentKey, parentDisposition, col) {
+  let id = cuid.slug()
+  let key = parentKey.concat(id)
+
+  send({
+    kind: 'create-entry',
+    entry: {id, key}
+  })
+
+  parentDisposition[col].unshift(id)
+  set(parentKey.slice(-1)[0], ['disposition', parentDisposition])
+}
+
+export function set (entryId, [what, value]) {
+  send({
     kind: 'update-entry',
     id: entryId,
     key: what,
@@ -98,7 +120,7 @@ export function set (entryId, [what, value]) {
       : what === 'tags'
         ? `{${value.join(',')}}`
         : value.trim()
-  }))
+  })
 }
 
 export function addComment (entryId, content) {

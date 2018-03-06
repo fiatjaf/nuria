@@ -84,28 +84,6 @@ FROM entries WHERE id = $1 AND can_read($2, entries.id);
 	return
 }
 
-func createEntry(pg *sqlx.DB, user string, parent string, entry Entry) (err error) {
-	_, err = pg.Exec(`
-WITH (
-  SELECT id, key FROM entries
-  WHERE id = $2
-   AND can_write($1, entries.id)
-) AS parent
-
-INSERT INTO entries (id, key, owner, tags, name, content)
-VALUES
-( $2
-, array_append(SELECT key FROM parent, $2)
-, $1
-, $3
-, $4
-, $5
-)
-    `, user, entry.Id,
-		toPGArray(entry.Tags), entry.Name, entry.Content)
-	return
-}
-
 func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
 	if key != "disposition" && key != "name" && key != "content" && key != "tags" {
 		return errors.New("unnalowed property: " + key)
@@ -116,6 +94,16 @@ UPDATE entries SET `+key+`=$1
 WHERE id = $2
   AND can_write($3, entries.id)
     `, value, entryId, user)
+	return
+}
+
+func createEntry(pg *sqlx.DB, user, parent string, entry *Entry) (err error) {
+	err = pg.Get(entry, `
+INSERT INTO entries (id, key)
+SELECT $1, $2
+ WHERE can_write($3, $4)
+RETURNING *
+    `, entry.Id, entry.Key, user, parent)
 	return
 }
 

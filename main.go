@@ -164,6 +164,33 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 					sendEntry(conn, entry)
 				}
 			}
+		case "create-entry":
+			log.Debug().
+				Str("id", m.Entry.Id).
+				Str("key", strings.Join(m.Entry.Key, "/")).
+				Msg("creating new entry")
+			parentId := m.Entry.Key[len(m.Entry.Key)-2]
+
+			err := createEntry(pg, user, parentId, &m.Entry)
+			if err != nil {
+				log.Error().
+					Str("entry", m.Entry.Id).
+					Err(err).
+					Msg("failed to create-entry")
+				continue
+			}
+
+			// get everybody that was subscribed to the parent entry,
+			// notify them and subscribe them to this entry also.
+			if tmp, ok := subscriptions.Get(parentId); ok {
+				thisEntryConns := cmap.New()
+				for user, iconn := range tmp.(cmap.ConcurrentMap).Items() {
+					conn := iconn.(*websocket.Conn)
+					thisEntryConns.Set(user, conn)
+					sendEntry(conn, m.Entry)
+				}
+				subscriptions.Set(m.Entry.Id, thisEntryConns)
+			}
 		}
 	}
 }

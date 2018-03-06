@@ -13,6 +13,7 @@ export default DragDropContext(HTML5Backend)(class extends Component {
 
     this.saveDisposition = this.saveDisposition.bind(this)
     this.moveEntry = this.moveEntry.bind(this)
+    this.addEntry = this.addEntry.bind(this)
     this.state = {
       disposition: this.getActualDisposition(props)
     }
@@ -67,6 +68,7 @@ export default DragDropContext(HTML5Backend)(class extends Component {
         entries: List(ids)
           .map(id => all_entries.get(id))
           .filter(x => x),
+        addEntry: this.addEntry,
         moveEntry: this.moveEntry,
         saveDisposition: this.saveDisposition
       })
@@ -96,6 +98,10 @@ export default DragDropContext(HTML5Backend)(class extends Component {
     this.setState({ disposition })
   }
 
+  addEntry (col) {
+    this.props.dispatch(Msg.NewEntry([this.state.disposition, col]))
+  }
+
   saveDisposition () {
     this.props.dispatch(Msg.SaveDisposition(this.state.disposition))
   }
@@ -109,7 +115,11 @@ class EntryColumn extends Component {
   render () {
     return (
       h('.entries-column', [
-        h('.new', '+')
+        h('.new', {
+          onClick: () => {
+            this.props.addEntry(this.props.col)
+          }
+        }, '+')
       ].concat(this.props.entries.isEmpty()
         ? h(Placeholder, {
           moveEntry: this.props.moveEntry,

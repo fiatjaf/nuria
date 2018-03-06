@@ -1,8 +1,10 @@
 :root {
-  --child-entry-background: whitesmoke;
-  --entries-background: #dbdcf9;
   --panels-background: #414154;
   --panels-foreground: whitesmoke;
+  --entries-background: #dbdcf9;
+  --new-entry-color: #888;
+  --new-entry-color-hover: #ccc;
+  --child-entry-background: whitesmoke;
   --child-entry-foreground: #333;
 }
 
@@ -22,6 +24,13 @@ a {
   cursor: pointer;
 }
 
+textarea {
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: inherit;
+}
+
 main {
   width: 100%;
   min-height: 100vh;
@@ -34,7 +43,7 @@ main {
   background: var(--panels-background);
   color: var(--panels-foreground);
   text-align: center;
-  width: 200px;
+  width: 270px;
   font-size: 120%;
   padding: 15px;
   position: relative;
@@ -75,6 +84,14 @@ main {
   .name {
     font-size: 113%;
     margin: 5px 0;
+    word-break: break-all;
+
+    textarea {
+      font-size: 110%;
+      background: var(--panels-foreground);
+      color: var(--panels-background);
+      padding: 4px 6px;
+    }
   }
 
   .tags {
@@ -148,11 +165,7 @@ main {
     }
 
     textarea {
-      width: 100%;
       min-height: 138px;
-      border: 0;
-      outline: none;
-      background: inherit;
     }
   }
 
@@ -191,8 +204,14 @@ main {
     width: 96%;
     margin: 2% auto;
     padding: 2px;
-    border: 3px dashed #888;
-    color: #888;
+    cursor: pointer;
+    border: 3px dashed var(--new-entry-color);
+    color: var(--new-entry-color);
+
+    &:hover {
+      color: var(--new-entry-color-hover);
+      border-color: var(--new-entry-color-hover);
+    }
   }
 
   .placeholder {
@@ -210,6 +229,7 @@ main {
     min-width: 40px;
     width: 96%;
     max-width: 170px;
+    word-break: break-all;
     cursor: pointer;
     text-decoration: none;
 

@@ -23,6 +23,7 @@ export const Model = Record({
 
 export const Msg = union([
   'EntriesUpdated',
+  'NewEntry',
   'StartEditing',
   'Edit',
   'FinishEditing',
@@ -38,6 +39,14 @@ function update (msg, state) {
     'EntriesUpdated': entries => [
       state.set('all_entries', entries),
       undefined
+    ],
+    'NewEntry': ([disposition, col]) => [
+      state,
+      () => data.newEntry(
+        state.all_entries.get(state.main_entry).key,
+        disposition,
+        col
+      )
     ],
     'StartEditing': what => {
       var val = state.all_entries.get(state.main_entry).get(what)

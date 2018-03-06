@@ -198,12 +198,15 @@ export const EditName = enhanceWithClickOutside(class extends Component {
 
   render () {
     return (
-      h('input', {
+      h(TextareaAutosize, {
         value: this.props.value,
         onChange: e => {
           this.props.dispatch(Msg.Edit(['name', e.target.value]))
         },
-        ref: el => el ? el.focus() : null,
+        ref: el => el ? el.textarea.focus() : null,
+        style: {
+          maxHeight: 140
+        },
         onKeyDown: e => {
           if (e.which === 27) {
             this.props.dispatch(Msg.CancelEditing())

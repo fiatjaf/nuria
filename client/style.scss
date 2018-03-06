@@ -1,6 +1,14 @@
+:root {
+  --child-entry-background: whitesmoke;
+  --entries-background: #dbdcf9;
+  --panels-background: #414154;
+  --panels-foreground: whitesmoke;
+  --child-entry-foreground: #333;
+}
+
 * {
   box-sizing: border-box;
-  font-family: sans-serif;
+  font-family: Ubuntu, sans-serif;
 }
 
 html, body, #app {
@@ -23,8 +31,8 @@ main {
 }
 
 #entry {
-  background: teal;
-  color: white;
+  background: var(--panels-background);
+  color: var(--panels-foreground);
   text-align: center;
   width: 200px;
   font-size: 120%;
@@ -55,7 +63,7 @@ main {
         text-decoration: underline;
         padding: 2px 4px;
         color: white;
-        background: teal;
+        background: var(--panels-background);
       }
     }
   }
@@ -153,7 +161,7 @@ main {
 }
 
 #entries {
-  background: #efba95;
+  background: var(--entries-background);
   flex-grow: 3;
   padding: 18px;
   overflow-y: auto;
@@ -186,13 +194,25 @@ main {
 
   .entry {
     padding: 6px;
-    background-color: rgba(255, 255, 255, 0.6);
+    background-color: var(--child-entry-background);
+    color: var(--child-entry-foreground);
     border-radius: 5px;
     margin: 4px auto;
     min-height: 40px;
     min-width: 40px;
     width: 96%;
     max-width: 170px;
+    cursor: pointer;
+    text-decoration: none;
+
+    &:hover {
+      box-shadow: inset 0 0 0 2000px rgba(120, 50, 100, 0.1);
+      transform: rotate(6deg);
+    }
+
+    &:active {
+      transform: none;
+    }
 
     .name {
       font-size: 110%;
@@ -202,10 +222,21 @@ main {
       color: inherit;
     }
     .content {
-      font-size: 90%;
+      font-size: 80%;
+      max-height: 90px;
       overflow: hidden;
-      white-space: nowrap;
-      text-overflow: ellipsis;
+      white-space: pre-wrap;
+      position: relative;
+
+      &:after {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 40px;
+        width: 100%;
+        background: linear-gradient(transparent -110px, var(--child-entry-background) 40px);
+      }
     }
   }
 }
@@ -216,8 +247,8 @@ main {
   top: 0;
   padding: 6px 13px;
   border-radius: 4px 0 0 20px;
-  background: teal;
-  color: white;
+  background: var(--panels-background);
+  color: var(--panels-foreground);
   transition: all 0.5s ease;
 
   &.is-open {
@@ -226,7 +257,7 @@ main {
 }
 
 #comments {
-  background: teal;
+  background: var(--panels-background);
   width: 200px;
   overflow: hidden;
   white-space: nowrap;

@@ -3,9 +3,9 @@ const h = require('react-hyperscript')
 const { DragSource, DropTarget } = require('react-dnd')
 
 const entrySource = {
-  beginDrag (props) {
+  beginDrag (props, _, component) {
     return {
-      id: props.child.get('id')
+      id: props.child.id
     }
   }
 }
@@ -14,8 +14,8 @@ const entryTarget = {
   hover (props, monitor) {
     let draggedId = monitor.getItem().id
 
-    if (draggedId !== props.child.get('id')) {
-      props.moveEntry(draggedId, props.child.get('id'), props.col)
+    if (draggedId !== props.child.id) {
+      props.moveEntry(draggedId, props.child.id, props.col)
     }
   },
   drop (props, monitor) {
@@ -36,15 +36,14 @@ export default DropTarget('entry', entryTarget, connect => ({
 
         return connectDragSource(
           connectDropTarget(
-            h('div.entry', {
+            h('a.entry', {
               style: {
                 visibility: isDragging ? 'hidden' : 'visible'
-              }
+              },
+              href: `#/${child.key.join('/')}`
             }, [
-              h('a.name', {
-                href: `#/${child.get('key').join('/')}`
-              }, child.get('name')),
-              h('.content', child.get('content'))
+              h('span.name', child.name),
+              h('.content', child.content.slice(0, 300))
             ])
           )
         )

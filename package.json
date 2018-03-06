@@ -17,28 +17,22 @@
     "react-hyperscript": "^3.1.0",
     "react-input-autosize": "^2.2.1",
     "react-tagsinput": "^3.19.0",
+    "starts-with": "^1.0.2",
     "tagmeme": "0.0.6"
   },
   "devDependencies": {
     "browserify": "^16.1.0",
     "browserify-incremental": "^3.1.1",
-    "rollup-plugin-commonjs": "^8.3.0",
-    "rollup-plugin-node-resolve": "^3.0.3",
     "rollupify": "^0.4.0",
     "scssify": "^3.0.1"
   },
   "browserify": {
     "transform": [
       "scssify",
-      [
-        "rollupify",
-        {
-          "config": "rollup.config.js"
-        }
-      ]
+      "rollupify"
     ]
   },
   "scripts": {
-    "watch": "ls entry.js data.js app.js program.js list-entries.js child-entry.js style.scss | entr browserifyinc -vd app.js -o bundle.js"
+    "watch": "ls client/*.js client/*.scss | entr browserifyinc -vd client/app.js -o bundle.js"
   }
 }

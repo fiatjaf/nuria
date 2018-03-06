@@ -18,6 +18,8 @@ type Entry struct {
 	Content     string         `json:"content" db:"content"`
 	Children    pq.StringArray `json:"children" db:"children"`
 	Disposition types.JSONText `json:"disposition" db:"disposition"`
+	IsUser      bool           `json:"is_user" db:"is_user"`
+	Data        types.JSONText `json:"data" db:"data"`
 }
 
 func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
@@ -26,6 +28,7 @@ SELECT entry FROM access
 INNER JOIN users ON users.id = access.user_id
 WHERE users.name = $1
     `, user)
+	entries = append(entries, user)
 	return
 }
 
@@ -54,18 +57,28 @@ SELECT
 , key
 , content
 , tags
-, ARRAY(
+, CASE WHEN is_user THEN '{}'::text[] ELSE ARRAY(
     SELECT users.name FROM memberships
     INNER JOIN entries AS e ON memberships.entry = entries.id
     INNER JOIN users ON users.id = memberships.member
     WHERE e.id = entries.id AND permission > 1
-  ) as members
-, ARRAY(
-    SELECT child.id FROM entries AS child
-    WHERE entries.key = child.key[1:cardinality(entries.key)]
-      AND cardinality(child.key) = cardinality(entries.key) + 1
-  ) as children
+  ) END as members
+, CASE WHEN is_user THEN
+    ARRAY(
+      SELECT id FROM entries AS child
+       WHERE cardinality(key) = 1
+         AND can_read(entries.id, child.id)
+    )
+  ELSE
+    ARRAY(
+      SELECT child.id FROM entries AS child
+      WHERE entries.key = child.key[1:cardinality(entries.key)]
+        AND cardinality(child.key) = cardinality(entries.key) + 1
+    )
+  END as children
 , array_to_json(disposition) AS disposition
+, is_user
+, data
 FROM entries WHERE id = $1 AND can_read($2, entries.id);
     `, entryId, user)
 	return

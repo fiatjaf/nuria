@@ -35,8 +35,7 @@ export default DragDropContext(HTML5Backend)(class extends Component {
 
       for (let i = 0; i < ids.length; i++) {
         let id = ids[i]
-        let idx = remaining.findIndex(thisid => thisid === id)
-        remaining = remaining.delete(idx)
+        remaining = remaining.remove(id)
       }
     })
 

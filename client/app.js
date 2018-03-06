@@ -1,7 +1,7 @@
 const React = require('react')
-const {render} = require('react-dom')
+const { render } = require('react-dom')
 const spa = require('raj-spa')
-const {program} = require('raj-react')
+const { program } = require('raj-react')
 
 require('./style.scss')
 
@@ -26,8 +26,9 @@ function getRouteProgram (location) {
   return entryProgram([
     new Model({
       me: window.user.name,
-      all_entries: new Map(data.base.entries),
-      main_entry: location.pathname.split('/').filter(x => x).slice(-1)[0]
+      all_entries: data.base.entries,
+      main_entry: location.pathname.split('/').filter(x => x).slice(-1)[0] ||
+        window.user.name
     }),
     dispatch => {
       data.onEntriesUpdated(entries => dispatch(Msg.EntriesUpdated(entries)))

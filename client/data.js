@@ -9,21 +9,17 @@ export const Entry = Record({
   content: '',
   tags: Set(),
   members: Set(),
-  children: Map(),
+  children: Set(),
   comments: List(),
-  disposition: List()
-})
-
-export const User = Record({
-  id: null,
-  username: '',
-  picture: ''
+  disposition: List(),
+  is_user: false,
+  data: {}
 })
 
 export const Comment = Record({
   id: null,
   content: '',
-  author: new User()
+  author: ''
 })
 
 export var base = {
@@ -58,7 +54,7 @@ export function sync () {
           name: entryData.name,
           content: entryData.content,
           tags: Set(entryData.tags),
-          children: List(entryData.children),
+          children: Set(entryData.children),
           members: Set(entryData.members),
           disposition: List(entryData.disposition)
 

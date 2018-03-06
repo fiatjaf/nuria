@@ -1,9 +1,8 @@
-const {isImmutable, Record, Map} = require('immutable')
+const { isImmutable, Record, Map } = require('immutable')
 const h = require('react-hyperscript')
-const {union} = require('tagmeme')
+const { union } = require('tagmeme')
 
 import * as data from './data'
-import { User } from './data'
 import EntryComponent from './entry'
 
 export default function (init) {
@@ -15,7 +14,7 @@ export default function (init) {
 }
 
 export const Model = Record({
-  me: new User(),
+  me: '',
   main_entry: null,
   all_entries: Map(),
   show_comments: false,
@@ -41,7 +40,7 @@ function update (msg, state) {
       undefined
     ],
     'StartEditing': what => {
-      var val = state.get('all_entries').get(state.get('main_entry')).get(what)
+      var val = state.all_entries.get(state.main_entry).get(what)
       if (isImmutable(val)) {
         val = val.toJS()
       }
@@ -57,7 +56,7 @@ function update (msg, state) {
     ],
     'FinishEditing': () => [
       state.set('editing', [null]),
-      () => data.set(state.get('main_entry'), state.get('editing'))
+      () => data.set(state.main_entry, state.editing)
     ],
     'CancelEditing': () => [
       state.set('editing', [null]),
@@ -65,7 +64,7 @@ function update (msg, state) {
     ],
     'SaveDisposition': disposition => [
       state,
-      data.set(state.get('main_entry'), ['disposition', disposition])
+      data.set(state.main_entry, ['disposition', disposition])
     ],
     'ToggleComments': () => [
       state.update('show_comments', show => !show),
@@ -73,14 +72,14 @@ function update (msg, state) {
     ],
     'AddComment': content => [
       state,
-      () => data.addComment(state.get('main_entry'), content)
+      () => data.addComment(state.main_entry, content)
     ]
   })
 }
 
 function view (state, dispatch) {
-  let entry = state.get('all_entries').get(state.get('main_entry'))
-  let [eKey, eVal] = state.get('editing')
+  let entry = state.all_entries.get(state.main_entry)
+  let [eKey, eVal] = state.editing
 
   return entry
     ? (

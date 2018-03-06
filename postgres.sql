@@ -1,10 +1,3 @@
-CREATE TABLE users (
-  id serial PRIMARY KEY,
-  name text,
-  email text,
-  picture text
-);
-
 CREATE TABLE entries (
   id text PRIMARY KEY,
   key text[] NOT NULL,
@@ -12,14 +5,24 @@ CREATE TABLE entries (
   name text NOT NULL DEFAULT '',
   content text NOT NULL DEFAULT '',
   disposition text[][] NOT NULL DEFAULT '{}',
+  data jsonb NOT NULL DEFAULT '{}',
+  is_user bool NOT NULL DEFAULT false,
 
   CONSTRAINT id_on_key CHECK (id = key[cardinality(key)])
 );
 CREATE INDEX ON entries USING GIN(key);
 
+CREATE VIEW users AS
+  SELECT
+    id
+  , name
+  , data->>'email' AS email
+  , data->>'picture' AS picture
+  FROM entries WHERE is_user;
+
 CREATE TABLE memberships (
   entry text REFERENCES entries (id) NOT NULL,
-  member int REFERENCES users (id) NOT NULL,
+  member text REFERENCES entries (id) NOT NULL,
   permission int NOT NULL DEFAULT 0,
   -- 10: admin, 9: normal, 8-3: to be defined, 2: commenter, 1: viewer, 0: no access.
 
@@ -44,20 +47,22 @@ CREATE FUNCTION can_read(u text, e text) RETURNS boolean AS $$
   SELECT EXISTS(
     SELECT FROM access INNER JOIN users ON users.name = u
     WHERE access.entry = e AND access.user_id = users.id AND access.permission > 0
+      UNION ALL
+    SELECT FROM users WHERE id = e
   );
 $$ LANGUAGE SQL;
 
 CREATE FUNCTION can_write(u text, e text) RETURNS boolean AS $$
-  SELECT EXISTS(
+  SELECT CASE WHEN u = e THEN true ELSE EXISTS(
     SELECT FROM access INNER JOIN users ON users.name = u
     WHERE access.entry = e AND access.user_id = users.id AND access.permission > 8
-  );
+  ) END;
 $$ LANGUAGE SQL;
 
 CREATE TABLE comments (
   id serial PRIMARY KEY,
   time timestamp DEFAULT now(),
-  commenter int REFERENCES users (id),
+  commenter text REFERENCES entries (id),
   entry text REFERENCES entries (id),
   content text
 );

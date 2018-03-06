@@ -44,16 +44,21 @@ func main() {
 		user := paths[len(paths)-1]
 		pic, err := userPicture(pg, user)
 
-		w.Header().Set("Cache-Control", "max-age=3600")
 		if err != nil {
+			log.Error().
+				Err(err).
+				Str("user", user).
+				Msg("getting user picture")
+
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
+		w.Header().Set("Cache-Control", "max-age=3600")
 		http.Redirect(w, r, pic, 302)
 	})
 
-	http.Handle("/", http.FileServer(http.Dir("./client")))
+	http.Handle("/", http.FileServer(http.Dir("./")))
 
 	port := os.Getenv("PORT")
 	log.Print("listening on port " + port)

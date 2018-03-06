@@ -84,7 +84,7 @@ main {
   .name {
     font-size: 113%;
     margin: 5px 0;
-    word-break: break-all;
+    word-break: break-word;
 
     textarea {
       font-size: 110%;
@@ -116,10 +116,6 @@ main {
       & > span {
         display: flex;
         flex-wrap: wrap;
-
-        & > * {
-          flex: auto;
-        }
       }
     }
 
@@ -229,7 +225,7 @@ main {
     min-width: 40px;
     width: 96%;
     max-width: 170px;
-    word-break: break-all;
+    word-break: break-word;
     cursor: pointer;
     text-decoration: none;
 

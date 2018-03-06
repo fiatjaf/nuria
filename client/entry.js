@@ -180,10 +180,10 @@ export const EditTags = enhanceWithClickOutside(class extends Component {
               if (e.which === 27) {
                 this.props.dispatch(Msg.CancelEditing())
               } else if (e.which === 13) {
-                this.props.dispatch(Msg.FinishEditing())
-              } else {
-                props.onKeyDown(e)
+                setTimeout(() => this.props.dispatch(Msg.FinishEditing()), 100)
               }
+
+              props.onKeyDown(e)
             }
           })
       })

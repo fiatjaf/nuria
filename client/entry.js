@@ -34,7 +34,7 @@ export default class Entry extends PureComponent {
             : [
               h('.wrapper', {
                 onClick: () => dispatch(Msg.StartEditing('name'))
-              }, entry.get('name'))
+              }, entry.name)
             ]
           ),
           h('.tags', eKey === 'tags'
@@ -49,7 +49,7 @@ export default class Entry extends PureComponent {
                 onClick: () => {
                   dispatch(Msg.StartEditing('tags'))
                 }
-              }, entry.get('tags')
+              }, entry.tags
                 .map(t =>
                   h('.tag', {
                     style: {backgroundColor: hashbow(t)}
@@ -59,7 +59,11 @@ export default class Entry extends PureComponent {
               )
             ]
           ),
-          h('.content', eKey === 'content'
+          h('.content', {
+            className: eKey !== 'content' &&
+              entry.content === '' &&
+              'empty'
+          }, eKey === 'content'
             ? [
               h(EditContent, {
                 dispatch,
@@ -69,15 +73,16 @@ export default class Entry extends PureComponent {
             : [
               h('.wrapper', {
                 onClick: () => dispatch(Msg.StartEditing('content'))
-              }, entry.get('content'))
+              }, entry.content)
             ]
           ),
-          h('div', entry.get('members')
+          h('.users', entry.members
             .toSeq()
             .map(name => (
-              h('div.user', {key: name}, [
+              h('.user', {key: name}, [
                 h('a', {
-                  title: name
+                  title: name,
+                  href: '#/' + name
                 }, [
                   h('img', {src: `/picture/${name}`})
                 ])
@@ -89,17 +94,17 @@ export default class Entry extends PureComponent {
         h('#entries', [
           h(ListEntries, {
             dispatch,
-            entries: entry.get('children'),
-            disposition: entry.get('disposition'),
-            all_entries: state.get('all_entries')
+            entries: entry.children,
+            disposition: entry.disposition,
+            all_entries: state.all_entries
           })
         ]),
         h('a#comment-handle', {
-          className: state.get('show_comments') ? 'is-open' : '',
+          className: state.show_comments ? 'is-open' : '',
           onClick: () => dispatch(Msg.ToggleComments())
-        }, state.get('show_comments') ? '>>>' : '<<<'),
+        }, state.show_comments ? '>>>' : '<<<'),
         h('div#comments', {
-          className: state.get('show_comments') ? '' : 'hidden'
+          className: state.show_comments ? '' : 'hidden'
         }, [
           h('form#comment-box', {
             onSubmit: e => {
@@ -114,15 +119,15 @@ export default class Entry extends PureComponent {
               h('button', 'Send comment')
             ])
           ]),
-          entry.get('comments')
+          entry.comments
             .map(c => (
-              h('div.comment', {key: c.get('id')}, [
+              h('div.comment', {key: c.id}, [
                 h('div', [
                   h('img', {src: c.getIn(['author', 'picture'])})
                 ]),
                 h('div', [
                   h('.author', c.getIn(['author', 'username'])),
-                  h('.content', c.get('content'))
+                  h('.content', c.content)
                 ])
               ])
             ))

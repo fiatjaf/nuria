@@ -44,6 +44,10 @@ main {
     width: 100%;
   }
 
+  .content .wrapper {
+    min-height: 140px;
+  }
+
   .key {
     background-color: rgba(239, 186, 149, 0.51);
     color: rgb(230, 224, 224);
@@ -139,23 +143,28 @@ main {
     margin: 20px 0;
     white-space: pre-wrap;
 
-    &:empty {
-      visibility: hidden;
+    &.empty {
+      background: inherit;
     }
 
     textarea {
       width: 100%;
-      min-height: 100px;
+      min-height: 138px;
       border: 0;
       outline: none;
       background: inherit;
     }
   }
 
-  .user {
-    img {
-      height: 40px;
-      border-radius: 20px;
+  .users {
+    display: flex;
+    flex-wrap: wrap;
+
+    .user {
+      img {
+        height: 40px;
+        border-radius: 20px;
+      }
     }
   }
 }
@@ -171,7 +180,6 @@ main {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    flex-wrap: wrap;
     min-width: 124px;
     margin-right: 6px;
   }
@@ -208,6 +216,10 @@ main {
     &:hover {
       box-shadow: inset 0 0 0 2000px rgba(120, 50, 100, 0.1);
       transform: rotate(6deg);
+
+      .content:after {
+        box-shadow: inset 0 0 0 2000px rgba(120, 50, 100, 0.08);
+      }
     }
 
     &:active {

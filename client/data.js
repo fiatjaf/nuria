@@ -97,7 +97,7 @@ export function set (entryId, [what, value]) {
         '}'
       : what === 'tags'
         ? `{${value.join(',')}}`
-        : value
+        : value.trim()
   }))
 }
 

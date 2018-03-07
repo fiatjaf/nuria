@@ -19,7 +19,7 @@ const entryTarget = {
     }
   },
   drop (props, monitor) {
-    props.saveDisposition()
+    props.saveArrangement()
   }
 }
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 
@@ -17,7 +18,7 @@ type Entry struct {
 	Name        string         `json:"name" db:"name"`
 	Content     string         `json:"content" db:"content"`
 	Children    pq.StringArray `json:"children" db:"children"`
-	Disposition types.JSONText `json:"disposition" db:"disposition"`
+	Arrangement types.JSONText `json:"arrangement" db:"arrangement"`
 	Data        types.JSONText `json:"data" db:"data"`
 }
 
@@ -67,7 +68,7 @@ SELECT
     WHERE entries.key = child.key[1:cardinality(entries.key)]
       AND cardinality(child.key) = cardinality(entries.key) + 1
   ) as children
-, array_to_json(disposition) AS disposition
+, arrangement
 , data
 FROM entries WHERE id = $1 AND can_read($2, entries.id);
     `, entryId, user)
@@ -75,7 +76,9 @@ FROM entries WHERE id = $1 AND can_read($2, entries.id);
 }
 
 func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
-	if key != "disposition" && key != "name" && key != "content" && key != "tags" {
+	if key == "arrangement" {
+		value, _ = json.Marshal(value)
+	} else if key != "name" && key != "content" && key != "tags" {
 		return errors.New("unnalowed property: " + key)
 	}
 

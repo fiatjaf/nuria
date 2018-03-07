@@ -11,28 +11,29 @@ export default DragDropContext(HTML5Backend)(class extends Component {
   constructor (props) {
     super(props)
 
-    this.saveDisposition = this.saveDisposition.bind(this)
+    this.saveArrangement = this.saveArrangement.bind(this)
     this.moveEntry = this.moveEntry.bind(this)
     this.addEntry = this.addEntry.bind(this)
     this.state = {
-      disposition: this.getActualDisposition(props)
+      arrangement: this.getActualArrangement(props)
     }
   }
 
   componentWillReceiveProps (props) {
-    if (this.props.disposition !== props.disposition) {
+    if (this.props.arrangement !== props.arrangement ||
+        this.props.entries !== props.entries) {
       this.setState({
-        disposition: this.getActualDisposition(props)
+        arrangement: this.getActualArrangement(props)
       })
     }
   }
 
-  getActualDisposition (props) {
-    var disposition = []
+  getActualArrangement (props) {
+    var arrangement = []
     var remaining = props.entries
 
-    props.disposition.forEach(ids => {
-      disposition.push(ids)
+    props.arrangement.forEach(ids => {
+      arrangement.push(ids)
 
       for (let i = 0; i < ids.length; i++) {
         let id = ids[i]
@@ -40,14 +41,14 @@ export default DragDropContext(HTML5Backend)(class extends Component {
       }
     })
 
-    disposition.unshift([])
-    disposition.push(remaining.toArray())
+    arrangement.unshift([])
+    arrangement.push(remaining.toArray())
 
-    return disposition
+    return arrangement
   }
 
   shouldComponentUpdate (props, state) {
-    if (this.state.disposition !== state.disposition) {
+    if (this.state.arrangement !== state.arrangement) {
       return true
     }
 
@@ -59,9 +60,9 @@ export default DragDropContext(HTML5Backend)(class extends Component {
 
   render () {
     let {all_entries} = this.props
-    let {disposition} = this.state
+    let {arrangement} = this.state
 
-    return disposition.map((ids, i) =>
+    return arrangement.map((ids, i) =>
       h(EntryColumn, {
         key: i,
         col: i,
@@ -70,24 +71,24 @@ export default DragDropContext(HTML5Backend)(class extends Component {
           .filter(x => x),
         addEntry: this.addEntry,
         moveEntry: this.moveEntry,
-        saveDisposition: this.saveDisposition
+        saveArrangement: this.saveArrangement
       })
     )
   }
 
   moveEntry (id, afterId, toColumnIndex) {
-    var disposition = this.state.disposition.slice(0)
+    var arrangement = this.state.arrangement.slice(0)
 
-    let toColumn = disposition[toColumnIndex]
+    let toColumn = arrangement[toColumnIndex]
     if (!toColumn) {
       toColumn = []
-      disposition.push(toColumn)
+      arrangement.push(toColumn)
     }
 
     let afterIndex = toColumn.indexOf(afterId)
 
-    for (let i = 0; i < disposition.length; i++) {
-      let col = disposition[i]
+    for (let i = 0; i < arrangement.length; i++) {
+      let col = arrangement[i]
       let entryIndex = col.indexOf(id)
       if (entryIndex !== -1) {
         col.splice(entryIndex, 1)
@@ -95,15 +96,15 @@ export default DragDropContext(HTML5Backend)(class extends Component {
     }
     toColumn.splice(afterIndex, 0, id)
 
-    this.setState({ disposition })
+    this.setState({ arrangement })
   }
 
   addEntry (col) {
-    this.props.dispatch(Msg.NewEntry([this.state.disposition, col]))
+    this.props.dispatch(Msg.NewEntry([this.state.arrangement, col]))
   }
 
-  saveDisposition () {
-    this.props.dispatch(Msg.SaveDisposition(this.state.disposition))
+  saveArrangement () {
+    this.props.dispatch(Msg.SaveArrangement(this.state.arrangement))
   }
 })
 
@@ -123,7 +124,7 @@ class EntryColumn extends Component {
       ].concat(this.props.entries.isEmpty()
         ? h(Placeholder, {
           moveEntry: this.props.moveEntry,
-          saveDisposition: this.props.saveDisposition,
+          saveArrangement: this.props.saveArrangement,
           col: this.props.col
         })
         : this.props.entries
@@ -131,7 +132,7 @@ class EntryColumn extends Component {
             h(ChildEntry, {
               key: child.get('id'),
               moveEntry: this.props.moveEntry,
-              saveDisposition: this.props.saveDisposition,
+              saveArrangement: this.props.saveArrangement,
               col: this.props.col,
               child
             })
@@ -148,7 +149,7 @@ const columnTarget = {
     props.moveEntry(draggedId, 0, props.col)
   },
   drop (props, monitor) {
-    props.saveDisposition()
+    props.saveArrangement()
   }
 }
 

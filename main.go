@@ -139,6 +139,7 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 			log.Debug().
 				Str("entry", m.EntryId).
 				Str("user", user).
+				Str("what", m.Key).
 				Msg("updating")
 			err := updateEntry(pg, user, m.EntryId, m.Key, m.Value)
 			if err != nil {

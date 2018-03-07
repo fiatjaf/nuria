@@ -95,7 +95,7 @@ export default class Entry extends PureComponent {
           h(ListEntries, {
             dispatch,
             entries: entry.children,
-            disposition: entry.disposition,
+            arrangement: entry.arrangement,
             all_entries: state.all_entries
           })
         ]),

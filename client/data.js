@@ -12,7 +12,7 @@ export const Entry = Record({
   members: Set(),
   children: Set(),
   comments: List(),
-  disposition: List(),
+  arrangement: List(),
   data: {}
 })
 
@@ -56,11 +56,7 @@ export function sync () {
           tags: Set(entryData.tags || []),
           children: Set(entryData.children || []),
           members: Set(entryData.members || []),
-          disposition: List(
-            Array.isArray(entryData.disposition)
-              ? entryData.disposition
-              : []
-          )
+          arrangement: List(entryData.arrangement || [])
 
           // data.comments = List(data.comments.map(c => {
           //   c.author = new User(c.author)
@@ -91,7 +87,7 @@ function send (jsonMessage) {
   ws.send(JSON.stringify(jsonMessage))
 }
 
-export function newEntry (parentKey, parentDisposition, col) {
+export function newEntry (parentKey, parentArrangement, col) {
   let id = cuid.slug()
   let key = parentKey.concat(id)
 
@@ -100,8 +96,8 @@ export function newEntry (parentKey, parentDisposition, col) {
     entry: {id, key}
   })
 
-  parentDisposition[col].unshift(id)
-  set(parentKey.slice(-1)[0], ['disposition', parentDisposition])
+  parentArrangement[col].unshift(id)
+  set(parentKey.slice(-1)[0], ['arrangement', parentArrangement])
 }
 
 export function set (entryId, [what, value]) {
@@ -109,13 +105,8 @@ export function set (entryId, [what, value]) {
     kind: 'update-entry',
     id: entryId,
     key: what,
-    value: what === 'disposition'
-      ? '{' +
-        value
-        .filter(col => col.length)
-        .map(col => `{${col.join(',')}}`)
-        .join(',') +
-        '}'
+    value: what === 'arrangement'
+      ? value.filter(x => x.length)
       : what === 'tags'
         ? `{${value.join(',')}}`
         : value.trim()

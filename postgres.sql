@@ -4,7 +4,7 @@ CREATE TABLE entries (
   tags text[] NOT NULL DEFAULT '{}',
   name text NOT NULL DEFAULT '',
   content text NOT NULL DEFAULT '',
-  disposition text[][] NOT NULL DEFAULT '{}',
+  arrangement json NOT NULL DEFAULT '[]',
   data jsonb NOT NULL DEFAULT '{}',
 
   CONSTRAINT id_on_key CHECK (id = key[cardinality(key)])
@@ -65,10 +65,3 @@ CREATE TABLE comments (
   entry text REFERENCES entries (id),
   content text
 );
-
-
-
-
-
-
-

@@ -85,8 +85,6 @@ export default DragDropContext(HTML5Backend)(class extends Component {
       arrangement.push(toColumn)
     }
 
-    let afterIndex = toColumn.indexOf(afterId)
-
     for (let i = 0; i < arrangement.length; i++) {
       let col = arrangement[i]
       let entryIndex = col.indexOf(id)
@@ -94,7 +92,13 @@ export default DragDropContext(HTML5Backend)(class extends Component {
         col.splice(entryIndex, 1)
       }
     }
-    toColumn.splice(afterIndex, 0, id)
+
+    if (afterId === 'last') {
+      toColumn.push(id)
+    } else {
+      let afterIndex = toColumn.indexOf(afterId)
+      toColumn.splice(afterIndex, 0, id)
+    }
 
     this.setState({ arrangement })
   }
@@ -121,23 +125,24 @@ class EntryColumn extends Component {
             this.props.addEntry(this.props.col)
           }
         }, '+')
-      ].concat(this.props.entries.isEmpty()
-        ? h(Placeholder, {
+      ].concat(
+        this.props.entries
+        .map(child => (
+          h(ChildEntry, {
+            key: child.get('id'),
+            moveEntry: this.props.moveEntry,
+            saveArrangement: this.props.saveArrangement,
+            col: this.props.col,
+            child
+          })
+        ))
+        .toArray()
+      ).concat(
+        h(Placeholder, {
           moveEntry: this.props.moveEntry,
           saveArrangement: this.props.saveArrangement,
           col: this.props.col
         })
-        : this.props.entries
-          .map(child => (
-            h(ChildEntry, {
-              key: child.get('id'),
-              moveEntry: this.props.moveEntry,
-              saveArrangement: this.props.saveArrangement,
-              col: this.props.col,
-              child
-            })
-          ))
-          .toArray()
       ))
     )
   }
@@ -146,7 +151,7 @@ class EntryColumn extends Component {
 const columnTarget = {
   hover (props, monitor) {
     let draggedId = monitor.getItem().id
-    props.moveEntry(draggedId, 0, props.col)
+    props.moveEntry(draggedId, 'last', props.col)
   },
   drop (props, monitor) {
     props.saveArrangement()

@@ -33,7 +33,7 @@ export function onEntriesUpdated (fn) {
 
 var ws
 export function sync () {
-  let username = window.user.name
+  let user = window.user.id
 
   ws = new WebSocket(
     location.protocol.replace('http', 'ws') + '//' + location.host + '/ws'
@@ -71,7 +71,7 @@ export function sync () {
     }
   }
   ws.onopen = function () {
-    ws.send(JSON.stringify({kind: 'login', user: username}))
+    ws.send(JSON.stringify({kind: 'login', user: user}))
   }
 }
 

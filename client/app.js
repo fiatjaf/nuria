@@ -28,7 +28,7 @@ function getRouteProgram (location) {
       me: window.user.name,
       all_entries: data.base.entries,
       main_entry: location.pathname.split('/').filter(x => x).slice(-1)[0] ||
-        window.user.name
+        window.user.id
     }),
     dispatch => {
       data.onEntriesUpdated(entries => dispatch(Msg.EntriesUpdated(entries)))

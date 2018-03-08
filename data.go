@@ -22,16 +22,6 @@ type Entry struct {
 	Data        types.JSONText `json:"data" db:"data"`
 }
 
-func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
-	err = pg.Select(&entries, `
-SELECT entry FROM access
-INNER JOIN users ON users.id = access.user_id
-WHERE users.name = $1
-    `, user)
-	entries = append(entries, user)
-	return
-}
-
 func userPicture(pg *sqlx.DB, user string) (pic string, err error) {
 	err = pg.Get(&pic, `
 SELECT
@@ -44,8 +34,17 @@ SELECT
       'https://robohash.org/' || $1 || '.png'
     END
   END
-FROM users WHERE name = $1
+FROM users WHERE id = $1
     `, user)
+	return
+}
+
+func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
+	err = pg.Select(&entries, `
+SELECT entry FROM access
+WHERE member = $1
+    `, user)
+	entries = append(entries, user)
 	return
 }
 
@@ -58,7 +57,7 @@ SELECT
 , content
 , tags
 , ARRAY(
-    SELECT users.name FROM memberships
+    SELECT users.id FROM memberships
     INNER JOIN entries AS e ON memberships.entry = entries.id
     INNER JOIN users ON users.id = memberships.member
     WHERE e.id = entries.id AND permission > 1

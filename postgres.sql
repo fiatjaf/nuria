@@ -29,23 +29,23 @@ CREATE TABLE memberships (
 );
 
 CREATE VIEW access AS
-  SELECT child.id AS entry, member AS user_id, permission FROM entries
-  LEFT JOIN entries AS child
+  SELECT child.id AS entry, member, permission FROM entries
+  INNER JOIN entries AS child
     ON entries.key = child.key[1:cardinality(entries.key)]
-  LEFT JOIN memberships AS m
+  INNER JOIN memberships AS m
     ON entries.id = m.entry;
 
 CREATE FUNCTION can_comment(u text, e text) RETURNS boolean AS $$
   SELECT EXISTS(
     SELECT FROM access INNER JOIN users ON users.name = u
-    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 1
+    WHERE access.entry = e AND access.member = users.id AND access.permission > 1
   );
 $$ LANGUAGE SQL;
 
 CREATE FUNCTION can_read(u text, e text) RETURNS boolean AS $$
   SELECT EXISTS(
     SELECT FROM access INNER JOIN users ON users.name = u
-    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 0
+    WHERE access.entry = e AND access.member = users.id AND access.permission > 0
       UNION ALL
     SELECT FROM users WHERE id = e
   );
@@ -54,7 +54,7 @@ $$ LANGUAGE SQL;
 CREATE FUNCTION can_write(u text, e text) RETURNS boolean AS $$
   SELECT CASE WHEN u = e THEN true ELSE EXISTS(
     SELECT FROM access INNER JOIN users ON users.name = u
-    WHERE access.entry = e AND access.user_id = users.id AND access.permission > 8
+    WHERE access.entry = e AND access.member = users.id AND access.permission > 8
   ) END;
 $$ LANGUAGE SQL;
 

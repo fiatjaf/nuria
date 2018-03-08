@@ -11,15 +11,16 @@ import (
 )
 
 type Entry struct {
-	Id          string         `json:"id" db:"id"`
-	Key         pq.StringArray `json:"key" db:"key"`
-	Members     pq.StringArray `json:"members" db:"members"`
-	Tags        pq.StringArray `json:"tags" db:"tags"`
-	Name        string         `json:"name" db:"name"`
-	Content     string         `json:"content" db:"content"`
-	Children    pq.StringArray `json:"children" db:"children"`
-	Arrangement types.JSONText `json:"arrangement" db:"arrangement"`
-	Data        types.JSONText `json:"data" db:"data"`
+	Id                 string         `json:"id" db:"id"`
+	Key                pq.StringArray `json:"key" db:"key"`
+	DirectMemberships  types.JSONText `json:"d_m" db:"direct_memberships"`
+	ImpliedMemberships types.JSONText `json:"i_m" db:"implied_memberships"`
+	Tags               pq.StringArray `json:"tg" db:"tags"`
+	Name               string         `json:"nm" db:"name"`
+	Content            string         `json:"ct" db:"content"`
+	Children           pq.StringArray `json:"chd" db:"children"`
+	Arrangement        types.JSONText `json:"arr" db:"arrangement"`
+	Data               types.JSONText `json:"dt" db:"data"`
 }
 
 func userPicture(pg *sqlx.DB, user string) (pic string, err error) {
@@ -56,17 +57,21 @@ SELECT
 , key
 , content
 , tags
-, ARRAY(
-    SELECT users.id FROM memberships
-    INNER JOIN entries AS e ON memberships.entry = entries.id
-    INNER JOIN users ON users.id = memberships.member
-    WHERE e.id = entries.id AND permission > 1
-  ) as members
+, (
+    SELECT json_agg(json_build_object('u', m.member, 'p', m.permission))
+    FROM memberships AS m
+    WHERE m.entry = entries.id AND permission > 1
+  ) AS direct_memberships
+, (
+    SELECT json_agg(json_build_object('u', a.member, 'p', a.permission))
+    FROM access AS a
+    WHERE a.entry = entries.id AND permission > 1
+  ) AS implied_memberships
 , ARRAY(
     SELECT child.id FROM entries AS child
     WHERE entries.key = child.key[1:cardinality(entries.key)]
       AND cardinality(child.key) = cardinality(entries.key) + 1
-  ) as children
+  ) AS children
 , arrangement
 , data
 FROM entries WHERE id = $1 AND can_read($2, entries.id);

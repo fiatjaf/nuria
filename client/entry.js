@@ -76,20 +76,23 @@ export default class Entry extends PureComponent {
               }, entry.content)
             ]
           ),
-          h('.users', entry.members
-            .toSeq()
-            .map(name => (
-              h('.user', {key: name}, [
-                h('a', {
-                  title: name,
-                  href: '#/' + name
-                }, [
-                  h('img', {src: `/picture/${name}`})
-                ])
-              ])
-            ))
-            .toArray()
-          )
+          h('.users', {
+            className: entry.direct_memberships.isEmpty() ? '' : 'has-direct'
+          }, [
+            h('.group.direct', entry.direct_memberships
+              .toSeq()
+              .sortBy(m => -m.permission)
+              .map(m => h(Membership, {membership: m}))
+              .toArray()
+            ),
+            h('.group.implied', entry.implied_memberships
+              .subtract(entry.direct_memberships)
+              .toSeq()
+              .sortBy(m => -m.permission)
+              .map(m => h(Membership, {membership: m}))
+              .toArray()
+            )
+          ])
         ]),
         h('#entries', [
           h(ListEntries, {
@@ -241,3 +244,22 @@ export const EditContent = enhanceWithClickOutside(class extends Component {
     )
   }
 })
+
+export class Membership extends PureComponent {
+  render () {
+    let user = this.props.membership.user
+    let permission = this.props.membership.permission
+
+    return (
+      h('.user', {
+        key: user,
+        title: `${user} has level-${permission} access.`,
+        permission
+      }, [
+        h('a', {href: '#/' + user}, [
+          h('img', {src: `/picture/${user}`})
+        ])
+      ])
+    )
+  }
+}

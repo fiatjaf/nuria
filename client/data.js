@@ -9,7 +9,8 @@ export const Entry = Record({
   name: '',
   content: '',
   tags: Set(),
-  members: Set(),
+  direct_memberships: List(),
+  implied_memberships: List(),
   children: Set(),
   comments: List(),
   arrangement: List(),
@@ -20,6 +21,11 @@ export const Comment = Record({
   id: null,
   content: '',
   author: ''
+})
+
+export const Membership = Record({
+  user: '',
+  permission: 0
 })
 
 export var base = {
@@ -51,12 +57,25 @@ export function sync () {
         base.entries = base.entries.set(entryData.id, new Entry({
           id: entryData.id,
           key: entryData.key,
-          name: entryData.name,
-          content: entryData.content,
-          tags: Set(entryData.tags || []),
-          children: Set(entryData.children || []),
-          members: Set(entryData.members || []),
-          arrangement: List(entryData.arrangement || [])
+          name: entryData.nm,
+          content: entryData.ct,
+          tags: Set(entryData.tg || []),
+          children: Set(entryData.chd || []),
+          direct_memberships: Set(
+            (Array.isArray(entryData.d_m) ? entryData.d_m : [])
+            .map(({u, p}) => new Membership({
+              user: u,
+              permission: p
+            }))
+          ),
+          implied_memberships: Set(
+            (Array.isArray(entryData.i_m) ? entryData.i_m : [])
+            .map(({u, p}) => new Membership({
+              user: u,
+              permission: p
+            }))
+          ),
+          arrangement: List(entryData.arr || [])
 
           // data.comments = List(data.comments.map(c => {
           //   c.author = new User(c.author)

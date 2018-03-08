@@ -166,13 +166,55 @@ main {
   }
 
   .users {
-    display: flex;
-    flex-wrap: wrap;
+    margin: 43px auto;
+
+    .group {
+      display: flex;
+      flex-wrap: wrap;
+    }
 
     .user {
-      img {
+      margin: 0 2px;
+      position: relative;
+    }
+
+    .user:after {
+      content: attr(permission);
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      background: rgba(239, 186, 149, 0.77);
+      color: white;
+      border-radius: 18px;
+      line-height: 14px;
+    }
+
+    &.has-direct .direct {
+      border-bottom: 2px solid inherit;
+      margin-bottom: 19px;
+    }
+
+    .direct {
+      .user:after {
+        font-size: 10px;
+        width: 15px;
+        height: 15px;
+      }
+      .user img {
         height: 40px;
         border-radius: 20px;
+      }
+    }
+
+    .implied {
+      .user:after {
+        font-size: 8px;
+        width: 12px;
+        height: 12px;
+      }
+      .user img {
+        height: 20px;
+        border-radius: 10px;
       }
     }
   }

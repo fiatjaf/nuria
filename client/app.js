@@ -6,7 +6,7 @@ const { program } = require('raj-react')
 require('./style.scss')
 
 import * as data from './data'
-import entryProgram, { Model, Msg } from './program'
+import entryProgram, { Model } from './program'
 
 const history = require('history').createHashHistory()
 
@@ -31,7 +31,7 @@ function getRouteProgram (location) {
         window.user.id
     }),
     dispatch => {
-      data.onEntriesUpdated(entries => dispatch(Msg.EntriesUpdated(entries)))
+      data.setDispatcher(dispatch)
     }
   ])
 }

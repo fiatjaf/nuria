@@ -40,6 +40,14 @@ FROM users WHERE id = $1
 	return
 }
 
+func allUsers(pg *sqlx.DB) (users []types.JSONText, err error) {
+	err = pg.Select(&users, `
+SELECT json_build_object('id', id, 'name', name)
+FROM users
+    `)
+	return
+}
+
 func entriesForUser(pg *sqlx.DB, user string) (entries []string, err error) {
 	err = pg.Select(&entries, `
 SELECT entry FROM access
@@ -49,10 +57,66 @@ WHERE member = $1
 	return
 }
 
+func fetchAllEntriesBelow(pg *sqlx.DB, id string) (entries []Entry, err error) {
+	err = pg.Select(&entries, `
+SELECT `+entryfields+`
+FROM entries WHERE $1 = ANY(key)
+    `, id)
+	return
+}
+
 func fetchEntry(pg *sqlx.DB, user string, entryId string) (entry Entry, err error) {
 	err = pg.Get(&entry, `
-SELECT
-  id        
+SELECT `+entryfields+`
+FROM entries WHERE id = $1 AND can_read($2, entries.id);
+    `, entryId, user)
+	return
+}
+
+func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
+	if key == "arrangement" {
+		value, _ = json.Marshal(value)
+	} else if key != "name" && key != "content" && key != "tags" {
+		return errors.New("unnalowed property: " + key)
+	}
+
+	_, err = pg.Exec(`
+UPDATE entries SET `+key+`=$1
+WHERE id = $2
+  AND can_write($3, entries.id)
+    `, value, entryId, user)
+	return
+}
+
+func setPermission(pg *sqlx.DB, user, entryId, targetUser string, permission int) (err error) {
+	_, err = pg.Exec(`
+INSERT INTO memberships (entry, member, permission)
+SELECT $1, $2, $3
+ WHERE can_admin($4, $1)
+    `, entryId, targetUser, permission, user)
+	return
+}
+
+func createEntry(pg *sqlx.DB, user, parent string, entry *Entry) (err error) {
+	err = pg.Get(entry, `
+INSERT INTO entries (id, key)
+SELECT $1, $2
+ WHERE can_write($3, $4)
+RETURNING *
+    `, entry.Id, entry.Key, user, parent)
+	return
+}
+
+func toPGArray(arr []string) string {
+	return "{" + strings.Join(arr, ",") + "}"
+}
+
+func fromPGArray(arr []string) string {
+	return "{" + strings.Join(arr, ",") + "}"
+}
+
+const entryfields = `
+  id
 , name
 , key
 , content
@@ -74,40 +138,4 @@ SELECT
   ) AS children
 , arrangement
 , data
-FROM entries WHERE id = $1 AND can_read($2, entries.id);
-    `, entryId, user)
-	return
-}
-
-func updateEntry(pg *sqlx.DB, user, entryId, key string, value interface{}) (err error) {
-	if key == "arrangement" {
-		value, _ = json.Marshal(value)
-	} else if key != "name" && key != "content" && key != "tags" {
-		return errors.New("unnalowed property: " + key)
-	}
-
-	_, err = pg.Exec(`
-UPDATE entries SET `+key+`=$1
-WHERE id = $2
-  AND can_write($3, entries.id)
-    `, value, entryId, user)
-	return
-}
-
-func createEntry(pg *sqlx.DB, user, parent string, entry *Entry) (err error) {
-	err = pg.Get(entry, `
-INSERT INTO entries (id, key)
-SELECT $1, $2
- WHERE can_write($3, $4)
-RETURNING *
-    `, entry.Id, entry.Key, user, parent)
-	return
-}
-
-func toPGArray(arr []string) string {
-	return "{" + strings.Join(arr, ",") + "}"
-}
-
-func fromPGArray(arr []string) string {
-	return "{" + strings.Join(arr, ",") + "}"
-}
+`

@@ -58,6 +58,15 @@ CREATE FUNCTION can_write(u text, e text) RETURNS boolean AS $$
   ) END;
 $$ LANGUAGE SQL;
 
+CREATE FUNCTION can_admin(u text, e text) RETURNS boolean AS $$
+  SELECT EXISTS(
+    SELECT FROM access INNER JOIN users ON users.name = u
+    WHERE access.entry = e AND access.member = users.id AND access.permission > 9
+      UNION ALL
+    SELECT FROM users WHERE id = e
+  );
+$$ LANGUAGE SQL;
+
 CREATE TABLE comments (
   id serial PRIMARY KEY,
   time timestamp DEFAULT now(),

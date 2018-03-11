@@ -3,6 +3,8 @@
 const {Record, Map, List, Set} = require('immutable')
 const cuid = require('cuid')
 
+import {Msg} from './program'
+
 export const Entry = Record({
   id: null,
   key: [],
@@ -29,12 +31,13 @@ export const Membership = Record({
 })
 
 export var base = {
-  entries: Map()
+  entries: Map(),
+  users: Set()
 }
 
-var entriesUpdated
-export function onEntriesUpdated (fn) {
-  entriesUpdated = fn
+var dispatch = () => {}
+export function setDispatcher (fn) {
+  dispatch = fn
 }
 
 var ws
@@ -82,10 +85,12 @@ export function sync () {
           //   return new Comment(c)
           // }))
         }))
-        if (entriesUpdated) {
-          entriesUpdated(base.entries)
-        }
 
+        dispatch(Msg.EntriesUpdated(base.entries))
+        break
+      case 'users':
+        base.users = Set(m.users)
+        dispatch(Msg.UsersUpdated(base.users))
         break
     }
   }
@@ -129,6 +134,17 @@ export function set (entryId, [what, value]) {
       : what === 'tags'
         ? `{${value.join(',')}}`
         : value.trim()
+  })
+}
+
+export function addMember (entryId, [user, permission]) {
+  if (!user) return
+
+  send({
+    kind: 'update-permission',
+    id: entryId,
+    permission,
+    target_user: user
   })
 }
 

@@ -8,6 +8,7 @@ import (
 
 	"github.com/gorilla/websocket"
 	"github.com/jmoiron/sqlx"
+	"github.com/jmoiron/sqlx/types"
 	_ "github.com/lib/pq"
 	"github.com/orcaman/concurrent-map"
 	"github.com/rs/zerolog"
@@ -66,12 +67,15 @@ func main() {
 }
 
 type msg struct {
-	Kind    string      `json:"kind"`
-	User    string      `json:"user,omitempty"`
-	Entry   Entry       `json:"entry,omitempty"`
-	EntryId string      `json:"id,omitempty"`
-	Key     string      `json:"key,omitempty"`
-	Value   interface{} `json:"value,omitempty"`
+	Kind       string           `json:"kind"`
+	User       string           `json:"user,omitempty"`
+	Entry      *Entry           `json:"entry,omitempty"`
+	EntryId    string           `json:"id,omitempty"`
+	Key        string           `json:"key,omitempty"`
+	Value      interface{}      `json:"value,omitempty"`
+	Users      []types.JSONText `json:"users,omitempty"`
+	Permission int              `json:"permission,omitempty"`
+	TargetUser string           `json:"target_user,omitempty"`
 }
 
 func handle(pg *sqlx.DB, conn *websocket.Conn) {
@@ -113,6 +117,22 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 					Err(err).
 					Msg("failed to fetch entriesForUser")
 			} else {
+				go func() {
+					users, err := allUsers(pg)
+					if err != nil {
+						log.Warn().
+							Err(err).
+							Msg("failed to fetch all users")
+						return
+					}
+					err = conn.WriteJSON(msg{Kind: "users", Users: users})
+					if err != nil {
+						log.Warn().
+							Err(err).
+							Msg("failed to send all users")
+					}
+				}()
+
 				for _, entryId := range entries {
 					entry, err := fetchEntry(pg, user, entryId)
 					if err != nil {
@@ -122,7 +142,7 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 							Msg("failed to fetchEntry on login")
 						continue
 					}
-					sendEntry(conn, entry)
+					sendEntry(conn, &entry)
 
 					var conns cmap.ConcurrentMap
 					if tmp, ok := subscriptions.Get(entryId); ok {
@@ -162,7 +182,43 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 				conns := tmp.(cmap.ConcurrentMap)
 				for _, iconn := range conns.Items() {
 					conn := iconn.(*websocket.Conn)
-					sendEntry(conn, entry)
+					sendEntry(conn, &entry)
+				}
+			}
+		case "update-permission":
+			log.Debug().
+				Str("entry", m.EntryId).
+				Str("user", user).
+				Msg("updating permission")
+
+			err := setPermission(pg, user, m.EntryId, m.TargetUser, m.Permission)
+			if err != nil {
+				log.Warn().
+					Err(err).
+					Msg("failed to setPermission")
+				continue
+			}
+
+			// if the target user is online, add him to the sync list
+			if tmp, ok := subscriptions.Get(m.TargetUser); ok {
+				for user, iconn := range tmp.(cmap.ConcurrentMap).Items() {
+					if user == m.TargetUser {
+						synclist, _ := subscriptions.Get(m.EntryId)
+						synclist.(cmap.ConcurrentMap).Set(user, iconn)
+					}
+				}
+			}
+
+			// sync this and all entries below this to all users that can access them
+			// (and are online, of course) -- will also include the target user
+			allentriesbelow, err := fetchAllEntriesBelow(pg, m.EntryId)
+			for _, entry := range allentriesbelow {
+				if tmp, ok := subscriptions.Get(entry.Id); ok {
+					conns := tmp.(cmap.ConcurrentMap)
+					for _, iconn := range conns.Items() {
+						conn := iconn.(*websocket.Conn)
+						sendEntry(conn, &entry)
+					}
 				}
 			}
 		case "create-entry":
@@ -172,7 +228,7 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 				Msg("creating new entry")
 			parentId := m.Entry.Key[len(m.Entry.Key)-2]
 
-			err := createEntry(pg, user, parentId, &m.Entry)
+			err := createEntry(pg, user, parentId, m.Entry)
 			if err != nil {
 				log.Error().
 					Str("entry", m.Entry.Id).
@@ -196,7 +252,7 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 	}
 }
 
-func sendEntry(conn *websocket.Conn, entry Entry) {
+func sendEntry(conn *websocket.Conn, entry *Entry) {
 	log.Debug().
 		Str("entry", entry.Id).
 		Msg("sending entry")

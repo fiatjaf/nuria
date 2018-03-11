@@ -1,4 +1,4 @@
-const { isImmutable, Record, Map } = require('immutable')
+const { isImmutable, Record, Map, Set } = require('immutable')
 const h = require('react-hyperscript')
 const { union } = require('tagmeme')
 
@@ -17,17 +17,24 @@ export const Model = Record({
   me: '',
   main_entry: null,
   all_entries: Map(),
+  all_users: Set(),
   show_comments: false,
-  editing: [null]
+  editing: [null],
+  adding_member: [null, 9]
 })
 
 export const Msg = union([
   'EntriesUpdated',
+  'UsersUpdated',
   'NewEntry',
   'StartEditing',
   'Edit',
   'FinishEditing',
   'CancelEditing',
+  'StartAddingMember',
+  'AddMemberEdit',
+  'FinishAddingMember',
+  'CancelAddingMember',
   'SaveArrangement',
   'ToggleComments',
   'AddComment'
@@ -38,6 +45,10 @@ function update (msg, state) {
   return Msg.match(msg, {
     'EntriesUpdated': entries => [
       state.set('all_entries', entries),
+      undefined
+    ],
+    'UsersUpdated': users => [
+      state.set('all_users', users),
       undefined
     ],
     'NewEntry': ([arrangement, col]) => [
@@ -69,6 +80,24 @@ function update (msg, state) {
     ],
     'CancelEditing': () => [
       state.set('editing', [null]),
+      undefined
+    ],
+    'StartAddingMember': () => [
+      state.set('adding_member', ['', state.adding_member[1]]),
+      undefined
+    ],
+    'AddMemberEdit': ([what, value]) => [
+      state.set('adding_member', what === 'name'
+        ? [value, state.adding_member[1]]
+        : [state.adding_member[0], value]),
+      undefined
+    ],
+    'FinishAddingMember': () => [
+      state.set('adding_member', [null, state.adding_member[1]]),
+      data.addMember(state.main_entry, state.adding_member)
+    ],
+    'CancelAddingMember': () => [
+      state.set('adding_member', [null, state.adding_member[1]]),
       undefined
     ],
     'SaveArrangement': arrangement => [

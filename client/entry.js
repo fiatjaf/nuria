@@ -6,6 +6,8 @@ const h = require('react-hyperscript')
 const ReactAutosizeInput = require('react-input-autosize').default
 const TextareaAutosize = require('react-autosize-textarea').default
 const ReactTagsInput = require('react-tagsinput')
+const Select = require('react-select').default
+const TangleText = require('react-tangle-text')
 
 import { Msg } from './program'
 import ListEntries from './list-entries'
@@ -76,14 +78,30 @@ export default class Entry extends PureComponent {
               }, entry.content)
             ]
           ),
-          h('.users', {
-            className: entry.direct_memberships.isEmpty() ? '' : 'has-direct'
-          }, [
+          h('.users', [
             h('.group.direct', entry.direct_memberships
               .toSeq()
               .sortBy(m => -m.permission)
               .map(m => h(Membership, {membership: m}))
               .toArray()
+              .concat([state.adding_member[0] === null
+                ? (
+                  h('button.start-add-member', {
+                    onClick: e => {
+                      e.preventDefault()
+                      dispatch(Msg.StartAddingMember())
+                    }
+                  }, '+ user')
+                )
+                : (
+                  h(AddMember, {
+                    dispatch,
+                    all_users: state.all_users,
+                    id: state.adding_member[0],
+                    permission: state.adding_member[1]
+                  })
+                )
+              ])
             ),
             h('.group.implied', entry.implied_memberships
               .subtract(entry.direct_memberships)
@@ -263,3 +281,48 @@ export class Membership extends PureComponent {
     )
   }
 }
+
+export const AddMember = enhanceWithClickOutside(class extends PureComponent {
+  render () {
+    let {dispatch, all_users, id, permission} = this.props
+
+    return (
+      h('.add-member', {
+      }, [
+        h(Select, {
+          value: id,
+          onChange: m => {
+            dispatch(Msg.AddMemberEdit(['name', m.id]))
+          },
+          options: all_users.toArray(),
+          clearable: false,
+          valueKey: 'id',
+          labelKey: 'name',
+          onInputKeyDown: e => {
+            if (e.which === 27) {
+              this.props.dispatch(Msg.CancelAddingMember())
+            } else if (e.which === 13) {
+              setTimeout(() => {
+                this.props.dispatch(Msg.FinishAddingMember())
+              }, 1)
+            }
+          }
+        }),
+        h(TangleText, {
+          value: permission,
+          onChange: v => {
+            dispatch(Msg.AddMemberEdit(['permission', v]))
+          },
+          min: 0,
+          max: 10,
+          step: 1,
+          pixelDistance: 20
+        })
+      ])
+    )
+  }
+
+  handleClickOutside () {
+    this.props.dispatch(Msg.FinishAddingMember())
+  }
+})

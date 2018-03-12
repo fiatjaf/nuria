@@ -19,6 +19,7 @@ export const Model = Record({
   all_entries: Map(),
   all_users: Set(),
   show_comments: false,
+  removing_entry: false,
   editing: [null],
   adding_member: [null, 9]
 })
@@ -27,6 +28,8 @@ export const Msg = union([
   'EntriesUpdated',
   'UsersUpdated',
   'NewEntry',
+  'RemoveEntry',
+  'DontRemoveEntry',
   'StartEditing',
   'Edit',
   'FinishEditing',
@@ -35,6 +38,7 @@ export const Msg = union([
   'AddMemberEdit',
   'FinishAddingMember',
   'CancelAddingMember',
+  'RemoveMember',
   'SaveArrangement',
   'ToggleComments',
   'AddComment'
@@ -58,6 +62,24 @@ function update (msg, state) {
         arrangement,
         col
       )
+    ],
+    'RemoveEntry': ([entryId, force]) => {
+      let entry = state.all_entries.get(entryId)
+      if (force || (entry.children.count() === 0)) {
+        return [
+          state.set('removing_entry', false),
+          () => data.removeEntry(entryId)
+        ]
+      } else {
+        return [
+          state.set('removing_entry', entryId),
+          undefined
+        ]
+      }
+    },
+    'DontRemoveEntry': () => [
+      state.set('removing_entry', false),
+      undefined
     ],
     'StartEditing': what => {
       var val = state.all_entries.get(state.main_entry).get(what)
@@ -94,11 +116,15 @@ function update (msg, state) {
     ],
     'FinishAddingMember': () => [
       state.set('adding_member', [null, state.adding_member[1]]),
-      data.addMember(state.main_entry, state.adding_member)
+      () => data.setMember(state.main_entry, state.adding_member)
     ],
     'CancelAddingMember': () => [
       state.set('adding_member', [null, state.adding_member[1]]),
       undefined
+    ],
+    'RemoveMember': userId => [
+      state,
+      () => data.setMember(state.main_entry, [userId, 0])
     ],
     'SaveArrangement': arrangement => [
       state,

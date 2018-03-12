@@ -16,6 +16,32 @@ export default class Entry extends PureComponent {
   render () {
     let {state, dispatch, entry, eKey, eVal} = this.props
 
+    if (state.removing_entry) {
+      let entry = state.all_entries.get(state.removing_entry)
+
+      return (
+        h('.confirm', [
+          h('p', `Really remove "${entry.name}"
+                  and its ${entry.children.count()}+
+                  children entries?`),
+          h('p', [
+            h('button', {
+              onClick: e => {
+                e.preventDefault()
+                dispatch(Msg.DontRemoveEntry())
+              }
+            }, 'No'),
+            h('button', {
+              onClick: e => {
+                e.preventDefault()
+                dispatch(Msg.RemoveEntry([state.removing_entry, true]))
+              }
+            }, 'Yes')
+          ])
+        ])
+      )
+    }
+
     return (
       h('main', [
         h('div#entry', [
@@ -271,6 +297,7 @@ export class Membership extends PureComponent {
     return (
       h('.user', {
         key: user,
+        id: user,
         title: `${user} has level-${permission} access.`,
         permission
       }, [

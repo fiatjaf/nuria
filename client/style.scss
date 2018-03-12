@@ -2,8 +2,8 @@
   --panels-background: #414154;
   --panels-foreground: whitesmoke;
   --entries-background: #dbdcf9;
-  --new-entry-color: #888;
-  --new-entry-color-hover: #ccc;
+  --new-entry-color: #ccc;
+  --new-entry-color-hover: #888;
   --child-entry-background: whitesmoke;
   --child-entry-foreground: #333;
 }
@@ -37,6 +37,19 @@ main {
 
   display: flex;
   main > * { flex: auto; }
+}
+
+.confirm {
+  width: 100vw;
+  height: 100vh;
+  text-align: center;
+  padding: 40vh 40vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 80;
+  background: white;
+  font-size: 130%;
 }
 
 #entry {
@@ -272,7 +285,7 @@ main {
   .new {
     opacity: 0.7;
     text-align: center;
-    font-size: 200%;
+    font-size: 180%;
     width: 96%;
     margin: 2% auto;
     padding: 2px;

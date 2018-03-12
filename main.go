@@ -178,7 +178,7 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 				continue
 			}
 
-			if tmp, ok := subscriptions.Get(m.EntryId); ok {
+			if tmp, ok := subscriptions.Get(entry.Id); ok {
 				conns := tmp.(cmap.ConcurrentMap)
 				for _, iconn := range conns.Items() {
 					conn := iconn.(*websocket.Conn)
@@ -195,26 +195,39 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 			if err != nil {
 				log.Warn().
 					Err(err).
+					Str("entry", m.EntryId).
+					Str("target", m.TargetUser).
+					Int("perm", m.Permission).
 					Msg("failed to setPermission")
 				continue
 			}
 
-			// if the target user is online, add him to the sync list
+			// if the target user is online, find his connection
+			var targetConn *websocket.Conn
 			if tmp, ok := subscriptions.Get(m.TargetUser); ok {
 				for user, iconn := range tmp.(cmap.ConcurrentMap).Items() {
 					if user == m.TargetUser {
-						synclist, _ := subscriptions.Get(m.EntryId)
-						synclist.(cmap.ConcurrentMap).Set(user, iconn)
+						targetConn = iconn.(*websocket.Conn)
 					}
 				}
 			}
 
 			// sync this and all entries below this to all users that can access them
-			// (and are online, of course) -- will also include the target user
+			// (and are online, of course) (will also include the target user)
 			allentriesbelow, err := fetchAllEntriesBelow(pg, m.EntryId)
 			for _, entry := range allentriesbelow {
 				if tmp, ok := subscriptions.Get(entry.Id); ok {
 					conns := tmp.(cmap.ConcurrentMap)
+
+					// add or remove our new authorized/deauthorized user here
+					if targetConn != nil {
+						if m.Permission > 0 {
+							conns.Set(m.TargetUser, targetConn)
+						} else {
+							conns.Remove(m.TargetUser)
+						}
+					}
+
 					for _, iconn := range conns.Items() {
 						conn := iconn.(*websocket.Conn)
 						sendEntry(conn, &entry)
@@ -247,6 +260,65 @@ func handle(pg *sqlx.DB, conn *websocket.Conn) {
 					sendEntry(conn, m.Entry)
 				}
 				subscriptions.Set(m.Entry.Id, thisEntryConns)
+			}
+		case "remove-entry":
+			log.Debug().
+				Str("id", m.EntryId).
+				Msg("removing entry")
+
+			parentId, err := getParentId(pg, m.EntryId)
+			if err != nil {
+				log.Error().
+					Str("entry", m.EntryId).
+					Err(err).
+					Msg("failed to get parent id")
+				continue
+			}
+
+			deletedIds, err := removeEntryAndAllDescendants(pg, user, m.EntryId)
+			if err != nil {
+				log.Error().
+					Str("entry", m.EntryId).
+					Err(err).
+					Msg("failed to remove-entry")
+				continue
+			}
+
+			// notify all the viewers of the deleted children that they must clean them
+			// from their local caches
+			for _, deleted := range deletedIds {
+				if tmp, ok := subscriptions.Get(deleted); ok {
+					for _, iconn := range tmp.(cmap.ConcurrentMap).Items() {
+						conn := iconn.(*websocket.Conn)
+						err := conn.WriteJSON(msg{Kind: "deleted-entry", EntryId: deleted})
+						if err != nil {
+							log.Warn().
+								Str("deleted", deleted).
+								Err(err).
+								Msg("failed to send deleted-entry to connection")
+						}
+					}
+					subscriptions.Remove(deleted)
+				}
+			}
+
+			// notify the parent viewers that this entry (the parent) doesn't have
+			// one of his children anymore:
+			entry, err := fetchEntry(pg, user, parentId)
+			if err != nil {
+				log.Error().
+					Str("entry", parentId).
+					Err(err).
+					Msg("failed to fetchEntry (parent) on remove-entry")
+				continue
+			}
+
+			if tmp, ok := subscriptions.Get(entry.Id); ok {
+				conns := tmp.(cmap.ConcurrentMap)
+				for _, iconn := range conns.Items() {
+					conn := iconn.(*websocket.Conn)
+					sendEntry(conn, &entry)
+				}
 			}
 		}
 	}

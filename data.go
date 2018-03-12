@@ -68,8 +68,15 @@ FROM entries WHERE $1 = ANY(key)
 func fetchEntry(pg *sqlx.DB, user string, entryId string) (entry Entry, err error) {
 	err = pg.Get(&entry, `
 SELECT `+entryfields+`
-FROM entries WHERE id = $1 AND can_read($2, entries.id);
+FROM entries WHERE id = $1 AND can_read($2, entries.id)
     `, entryId, user)
+	return
+}
+
+func getParentId(pg *sqlx.DB, entryId string) (id string, err error) {
+	err = pg.Get(&id, `
+SELECT key[cardinality(key) - 1] FROM entries WHERE id = $1
+    `, entryId)
 	return
 }
 
@@ -93,6 +100,7 @@ func setPermission(pg *sqlx.DB, user, entryId, targetUser string, permission int
 INSERT INTO memberships (entry, member, permission)
 SELECT $1, $2, $3
  WHERE can_admin($4, $1)
+ON CONFLICT (entry, member) DO UPDATE SET permission = $3
     `, entryId, targetUser, permission, user)
 	return
 }
@@ -104,6 +112,17 @@ SELECT $1, $2
  WHERE can_write($3, $4)
 RETURNING *
     `, entry.Id, entry.Key, user, parent)
+	return
+}
+
+func removeEntryAndAllDescendants(pg *sqlx.DB, user, id string) (rem []string, err error) {
+	err = pg.Select(&rem, `
+DELETE FROM entries
+WHERE $1 = ANY(key)
+  AND cardinality(key) > 1
+  AND can_write($2, entries.id)
+RETURNING id
+    `, id, user)
 	return
 }
 

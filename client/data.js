@@ -55,6 +55,11 @@ export function sync () {
     let m = JSON.parse(e.data)
     console.log('got message', m)
     switch (m.kind) {
+      case 'deleted-entry':
+        let id = m.id
+        base.entries = base.entries.delete(id)
+        dispatch(Msg.EntriesUpdated(base.entries))
+        break
       case 'entry':
         let entryData = m.entry
         base.entries = base.entries.set(entryData.id, new Entry({
@@ -137,7 +142,7 @@ export function set (entryId, [what, value]) {
   })
 }
 
-export function addMember (entryId, [user, permission]) {
+export function setMember (entryId, [user, permission]) {
   if (!user) return
 
   send({
@@ -145,6 +150,13 @@ export function addMember (entryId, [user, permission]) {
     id: entryId,
     permission,
     target_user: user
+  })
+}
+
+export function removeEntry (entryId) {
+  send({
+    kind: 'remove-entry',
+    id: entryId
   })
 }
 

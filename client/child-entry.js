@@ -37,6 +37,7 @@ export default DropTarget('entry', entryTarget, connect => ({
         return connectDragSource(
           connectDropTarget(
             h('a.entry', {
+              id: child.id,
               style: {
                 visibility: isDragging ? 'hidden' : 'visible'
               },

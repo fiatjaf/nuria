@@ -2,15 +2,17 @@ const React = require('react')
 const { render } = require('react-dom')
 const spa = require('raj-spa')
 const { program } = require('raj-react')
+const Mousetrap = require('mousetrap')
 
 require('./style.scss')
 
 import * as data from './data'
-import entryProgram, { Model } from './program'
+import entryProgram, { Model, Msg } from './program'
 
 const history = require('history').createHashHistory()
 
 data.sync()
+var globalDispatch = () => {}
 
 function main () {
   return React.createElement(
@@ -27,11 +29,13 @@ function getRouteProgram (location) {
     new Model({
       me: window.user.name,
       all_entries: data.base.entries,
+      all_users: data.base.users,
       main_entry: location.pathname.split('/').filter(x => x).slice(-1)[0] ||
         window.user.id
     }),
     dispatch => {
       data.setDispatcher(dispatch)
+      globalDispatch = dispatch
     }
   ])
 }
@@ -55,3 +59,10 @@ const router = {
 }
 
 render(main(), document.getElementById('app'))
+
+Mousetrap.bind('del', () => {
+  let entry = document.querySelector('.entry:hover')
+  if (entry) return globalDispatch(Msg.RemoveEntry([entry.id, false]))
+  let member = document.querySelector('.users .user:hover')
+  if (member) return globalDispatch(Msg.RemoveMember(member.id))
+})

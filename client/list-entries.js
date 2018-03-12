@@ -129,7 +129,7 @@ class EntryColumn extends Component {
         this.props.entries
         .map(child => (
           h(ChildEntry, {
-            key: child.get('id'),
+            key: child.id,
             moveEntry: this.props.moveEntry,
             saveArrangement: this.props.saveArrangement,
             col: this.props.col,
